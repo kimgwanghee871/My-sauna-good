@@ -1,30 +1,31 @@
-import jwt, { SignOptions } from 'jsonwebtoken'
+import jwt, { type SignOptions, type Secret } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { JWTPayload, User } from '@/types/auth'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+// 환경변수 타입 확정
+const JWT_SECRET: Secret = process.env.JWT_SECRET!
+const JWT_EXPIRES_IN: SignOptions['expiresIn'] = 
+  (process.env.JWT_EXPIRES_IN as any) ?? '7d'
 
 // JWT 토큰 생성
 export function generateToken(user: Pick<User, 'id' | 'email' | 'role'>): string {
+  if (!JWT_SECRET) throw new Error('JWT_SECRET is missing')
+  
   const payload: Omit<JWTPayload, 'iat' | 'exp'> = {
     userId: user.id,
     email: user.email,
     role: user.role,
   }
   
-  const secret = JWT_SECRET as string
-  const options: SignOptions = { 
-    expiresIn: JWT_EXPIRES_IN as string 
-  }
-  
-  return jwt.sign(payload, secret, options)
+  const opts: SignOptions = { expiresIn: JWT_EXPIRES_IN }
+  return jwt.sign(payload, JWT_SECRET, opts)
 }
 
 // JWT 토큰 검증
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET as string) as JWTPayload
+    if (!JWT_SECRET) throw new Error('JWT_SECRET is missing')
+    return jwt.verify(token, JWT_SECRET) as JWTPayload
   } catch (error) {
     console.error('Token verification failed:', error)
     return null
