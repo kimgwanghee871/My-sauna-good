@@ -78,22 +78,27 @@ export async function generateText(
       throw new Error('Streaming not implemented in this function')
     }
 
-    const completion = response.choices[0]
-    const usage = response.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
-    
-    // 비용 계산
-    const costs = TOKEN_COSTS[modelName]
-    const cost = (usage.prompt_tokens * costs.input) + (usage.completion_tokens * costs.output)
+    // 타입 가드: Stream 타입이 아닌 ChatCompletion 타입임을 확인
+    if ('choices' in response) {
+      const completion = response.choices[0]
+      const usage = response.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+      
+      // 비용 계산
+      const costs = TOKEN_COSTS[modelName]
+      const cost = (usage.prompt_tokens * costs.input) + (usage.completion_tokens * costs.output)
 
-    return {
-      content: completion.message?.content || '',
-      usage: {
-        promptTokens: usage.prompt_tokens,
-        completionTokens: usage.completion_tokens,
-        totalTokens: usage.total_tokens,
-      },
-      cost,
-      model: modelName,
+      return {
+        content: completion.message?.content || '',
+        usage: {
+          promptTokens: usage.prompt_tokens,
+          completionTokens: usage.completion_tokens,
+          totalTokens: usage.total_tokens,
+        },
+        cost,
+        model: modelName,
+      }
+    } else {
+      throw new Error('Invalid response type from OpenAI')
     }
 
   } catch (error) {
