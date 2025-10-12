@@ -13,13 +13,13 @@ export function generateToken(user: Pick<User, 'id' | 'email' | 'role'>): string
     role: user.role,
   }
   
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+  return jwt.sign(payload, JWT_SECRET as string, { expiresIn: JWT_EXPIRES_IN as string })
 }
 
 // JWT 토큰 검증
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload
+    return jwt.verify(token, JWT_SECRET as string) as JWTPayload
   } catch (error) {
     console.error('Token verification failed:', error)
     return null
