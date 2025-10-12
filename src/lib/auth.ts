@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { JWTPayload, User } from '@/types/auth'
 
@@ -13,7 +13,12 @@ export function generateToken(user: Pick<User, 'id' | 'email' | 'role'>): string
     role: user.role,
   }
   
-  return jwt.sign(payload, JWT_SECRET as string, { expiresIn: JWT_EXPIRES_IN as string })
+  const secret = JWT_SECRET as string
+  const options: SignOptions = { 
+    expiresIn: JWT_EXPIRES_IN as string 
+  }
+  
+  return jwt.sign(payload, secret, options)
 }
 
 // JWT 토큰 검증
