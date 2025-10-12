@@ -1,4 +1,5 @@
-import jwt, { type SignOptions, type Secret } from 'jsonwebtoken'
+import jwt from 'jsonwebtoken'
+import type { SignOptions, Secret } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { JWTPayload, User } from '@/types/auth'
 
