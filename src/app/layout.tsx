@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Noto_Sans_KR } from 'next/font/google'
 import './globals.css'
+import { Providers } from './providers'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -42,7 +43,9 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${inter.variable} ${notoSansKr.variable}`}>
       <body className="min-h-screen antialiased bg-gradient-to-br from-slate-50 to-blue-50">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )
