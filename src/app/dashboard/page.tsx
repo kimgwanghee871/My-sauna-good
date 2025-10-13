@@ -1,9 +1,8 @@
-import { supabaseServer } from '@/lib/supabase-server'
+import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
-  const supabase = supabaseServer()
-  const { data: { session } } = await supabase.auth.getSession()
+  const session = await getServerSession()
   
   if (!session) {
     redirect('/login')
@@ -23,7 +22,7 @@ export default async function DashboardPage() {
                   대시보드
                 </h1>
                 <p className="text-sm text-gray-600">
-                  안녕하세요, {user.email}님!
+                  안녕하세요, {user?.email || user?.name}님!
                 </p>
               </div>
               <div className="flex space-x-3">
@@ -59,13 +58,11 @@ export default async function DashboardPage() {
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-gray-500">이메일</label>
-                  <p className="text-sm text-gray-900">{user.email}</p>
+                  <p className="text-sm text-gray-900">{user?.email}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">가입일</label>
-                  <p className="text-sm text-gray-900">
-                    {new Date(user.created_at).toLocaleDateString('ko-KR')}
-                  </p>
+                  <label className="text-sm font-medium text-gray-500">이름</label>
+                  <p className="text-sm text-gray-900">{user?.name || '미설정'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">플랜</label>
@@ -80,16 +77,11 @@ export default async function DashboardPage() {
   )
 }
 
-// 로그아웃 버튼 컴포넌트
+// 로그아웃 버튼 컴포넌트 - 별도 파일로 분리 예정
 function LogoutButton() {
   return (
-    <form action="/auth/logout" method="post">
-      <button
-        type="submit"
-        className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-      >
-        로그아웃
-      </button>
-    </form>
+    <button className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+      로그아웃
+    </button>
   )
 }
