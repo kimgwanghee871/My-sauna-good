@@ -2,6 +2,19 @@ import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { NextAuthOptions } from 'next-auth'
 
+// NextAuth 타입 확장
+declare module 'next-auth' {
+  interface Session {
+    accessToken?: string
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    accessToken?: string
+  }
+}
+
 const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -10,16 +23,19 @@ const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account }) {
       if (account) {
         token.accessToken = account.access_token
-        token.id = profile?.sub
       }
       return token
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken
-      session.user.id = token.id as string
+      if (session && token) {
+        (session as any).accessToken = token.accessToken
+        if (session.user) {
+          (session.user as any).id = token.sub
+        }
+      }
       return session
     },
   },
