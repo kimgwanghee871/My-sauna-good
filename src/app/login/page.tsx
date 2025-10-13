@@ -1,52 +1,33 @@
 'use client'
 
+import { signIn } from 'next-auth/react'
 import { useState } from 'react'
-import { supabaseBrowser } from '@/lib/supabase-browser'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
-  const supabase = supabaseBrowser()
 
   const signInWithGoogle = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
+      const result = await signIn('google', {
+        callbackUrl: '/dashboard',
+        redirect: false
       })
       
-      if (error) throw error
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+      
+      // 성공시 리다이렉트는 NextAuth가 자동 처리
+      if (result?.ok) {
+        window.location.href = '/dashboard'
+      }
     } catch (error: any) {
       console.error('Login error:', error)
       setError(error.message || '로그인 중 오류가 발생했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const signInWithEmail = async (email: string, password: string) => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-      
-      if (error) throw error
-      
-      // 로그인 성공 시 대시보드로 이동
-      window.location.href = '/dashboard'
-    } catch (error: any) {
-      console.error('Email login error:', error)
-      setError(error.message || '이메일 로그인 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
@@ -87,7 +68,7 @@ export default function LoginPage() {
                     <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  Google로 계속
+                  구글로 계속하기
                 </>
               )}
             </button>
@@ -95,10 +76,7 @@ export default function LoginPage() {
           
           <div className="text-center">
             <p className="text-sm text-gray-500">
-              계정이 없으신가요?{' '}
-              <span className="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">
-                Google로 시작하기
-              </span>
+              간편하고 안전한 Google 로그인으로 시작하세요
             </p>
           </div>
         </div>
