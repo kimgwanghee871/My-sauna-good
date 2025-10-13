@@ -1,14 +1,8 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 
-const authOptions = {
-  providers: [],
-  session: { strategy: 'jwt' as const },
-  secret: process.env.NEXTAUTH_SECRET,
-}
-
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession()
   
   if (!session) {
     redirect('/login')
