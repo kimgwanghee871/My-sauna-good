@@ -1,0 +1,1028 @@
+From 5487efba423955bb6bee8bddc8d13ffa0bb8a6ef Mon Sep 17 00:00:00 2001
+From: kimgwanghee871 <genspark_dev@genspark.ai>
+Date: Mon, 13 Oct 2025 15:01:05 +0000
+Subject: [PATCH] feat: Add NextAuth Google OAuth integration
+
+- Add NextAuth API route for Google OAuth
+- Update login and dashboard pages for NextAuth
+- Add NextAuth providers configuration
+---
+ app/api/auth/[...nextauth]/route.ts           |  37 ++
+ {src/app => app}/api/auth/login/route.ts      |   0
+ {src/app => app}/api/auth/logout/route.ts     |   0
+ {src/app => app}/api/auth/refresh/route.ts    |   0
+ {src/app => app}/api/auth/register/route.ts   |   0
+ .../app => app}/api/generate/[jobId]/route.ts |   0
+ {src/app => app}/api/generate/route.ts        |   0
+ {src/app => app}/auth/callback/route.ts       |   0
+ {src/app => app}/auth/logout/route.ts         |   0
+ {src/app => app}/dashboard/page.tsx           |  29 +-
+ {src/app => app}/generate/page.tsx            |   0
+ {src/app => app}/globals.css                  |   0
+ {src/app => app}/layout.tsx                   |   5 +-
+ {src/app => app}/login/page.tsx               |  44 +-
+ {src/app => app}/page.tsx                     |   0
+ app/providers.tsx                             |  11 +
+ {src/app => app}/register/page.tsx            |   0
+ auto-save-deploy.out                          | 589 ++++++++++++++++++
+ auto-save-deploy.sh                           |  67 ++
+ src/components/LogoutButton.tsx               |  14 +
+ 20 files changed, 741 insertions(+), 55 deletions(-)
+ create mode 100644 app/api/auth/[...nextauth]/route.ts
+ rename {src/app => app}/api/auth/login/route.ts (100%)
+ rename {src/app => app}/api/auth/logout/route.ts (100%)
+ rename {src/app => app}/api/auth/refresh/route.ts (100%)
+ rename {src/app => app}/api/auth/register/route.ts (100%)
+ rename {src/app => app}/api/generate/[jobId]/route.ts (100%)
+ rename {src/app => app}/api/generate/route.ts (100%)
+ rename {src/app => app}/auth/callback/route.ts (100%)
+ rename {src/app => app}/auth/logout/route.ts (100%)
+ rename {src/app => app}/dashboard/page.tsx (76%)
+ rename {src/app => app}/generate/page.tsx (100%)
+ rename {src/app => app}/globals.css (100%)
+ rename {src/app => app}/layout.tsx (92%)
+ rename {src/app => app}/login/page.tsx (76%)
+ rename {src/app => app}/page.tsx (100%)
+ create mode 100644 app/providers.tsx
+ rename {src/app => app}/register/page.tsx (100%)
+ create mode 100644 auto-save-deploy.out
+ create mode 100755 auto-save-deploy.sh
+ create mode 100644 src/components/LogoutButton.tsx
+
+diff --git a/app/api/auth/[...nextauth]/route.ts b/app/api/auth/[...nextauth]/route.ts
+new file mode 100644
+index 0000000..37ec879
+--- /dev/null
++++ b/app/api/auth/[...nextauth]/route.ts
+@@ -0,0 +1,37 @@
++import NextAuth from 'next-auth'
++import GoogleProvider from 'next-auth/providers/google'
++import { NextAuthOptions } from 'next-auth'
++
++const authOptions: NextAuthOptions = {
++  providers: [
++    GoogleProvider({
++      clientId: process.env.GOOGLE_CLIENT_ID!,
++      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
++    }),
++  ],
++  callbacks: {
++    async jwt({ token, account, profile }) {
++      if (account) {
++        token.accessToken = account.access_token
++        token.id = profile?.sub
++      }
++      return token
++    },
++    async session({ session, token }) {
++      session.accessToken = token.accessToken
++      session.user.id = token.id as string
++      return session
++    },
++  },
++  pages: { 
++    signIn: '/login', 
++    error: '/auth/error' 
++  },
++  session: { 
++    strategy: 'jwt' 
++  },
++  secret: process.env.NEXTAUTH_SECRET,
++}
++
++const handler = NextAuth(authOptions)
++export { handler as GET, handler as POST }
+\ No newline at end of file
+diff --git a/src/app/api/auth/login/route.ts b/app/api/auth/login/route.ts
+similarity index 100%
+rename from src/app/api/auth/login/route.ts
+rename to app/api/auth/login/route.ts
+diff --git a/src/app/api/auth/logout/route.ts b/app/api/auth/logout/route.ts
+similarity index 100%
+rename from src/app/api/auth/logout/route.ts
+rename to app/api/auth/logout/route.ts
+diff --git a/src/app/api/auth/refresh/route.ts b/app/api/auth/refresh/route.ts
+similarity index 100%
+rename from src/app/api/auth/refresh/route.ts
+rename to app/api/auth/refresh/route.ts
+diff --git a/src/app/api/auth/register/route.ts b/app/api/auth/register/route.ts
+similarity index 100%
+rename from src/app/api/auth/register/route.ts
+rename to app/api/auth/register/route.ts
+diff --git a/src/app/api/generate/[jobId]/route.ts b/app/api/generate/[jobId]/route.ts
+similarity index 100%
+rename from src/app/api/generate/[jobId]/route.ts
+rename to app/api/generate/[jobId]/route.ts
+diff --git a/src/app/api/generate/route.ts b/app/api/generate/route.ts
+similarity index 100%
+rename from src/app/api/generate/route.ts
+rename to app/api/generate/route.ts
+diff --git a/src/app/auth/callback/route.ts b/app/auth/callback/route.ts
+similarity index 100%
+rename from src/app/auth/callback/route.ts
+rename to app/auth/callback/route.ts
+diff --git a/src/app/auth/logout/route.ts b/app/auth/logout/route.ts
+similarity index 100%
+rename from src/app/auth/logout/route.ts
+rename to app/auth/logout/route.ts
+diff --git a/src/app/dashboard/page.tsx b/app/dashboard/page.tsx
+similarity index 76%
+rename from src/app/dashboard/page.tsx
+rename to app/dashboard/page.tsx
+index bb63306..cd76262 100644
+--- a/src/app/dashboard/page.tsx
++++ b/app/dashboard/page.tsx
+@@ -1,9 +1,9 @@
+-import { supabaseServer } from '@/lib/supabase-server'
++import { getServerSession } from 'next-auth'
+ import { redirect } from 'next/navigation'
++import LogoutButton from '@/components/LogoutButton'
+ 
+ export default async function DashboardPage() {
+-  const supabase = supabaseServer()
+-  const { data: { session } } = await supabase.auth.getSession()
++  const session = await getServerSession()
+   
+   if (!session) {
+     redirect('/login')
+@@ -23,7 +23,7 @@ export default async function DashboardPage() {
+                   대시보드
+                 </h1>
+                 <p className="text-sm text-gray-600">
+-                  안녕하세요, {user.email}님!
++                  안녕하세요, {user?.email || user?.name}님!
+                 </p>
+               </div>
+               <div className="flex space-x-3">
+@@ -59,13 +59,11 @@ export default async function DashboardPage() {
+               <div className="space-y-3">
+                 <div>
+                   <label className="text-sm font-medium text-gray-500">이메일</label>
+-                  <p className="text-sm text-gray-900">{user.email}</p>
++                  <p className="text-sm text-gray-900">{user?.email}</p>
+                 </div>
+                 <div>
+-                  <label className="text-sm font-medium text-gray-500">가입일</label>
+-                  <p className="text-sm text-gray-900">
+-                    {new Date(user.created_at).toLocaleDateString('ko-KR')}
+-                  </p>
++                  <label className="text-sm font-medium text-gray-500">이름</label>
++                  <p className="text-sm text-gray-900">{user?.name || '미설정'}</p>
+                 </div>
+                 <div>
+                   <label className="text-sm font-medium text-gray-500">플랜</label>
+@@ -80,16 +78,3 @@ export default async function DashboardPage() {
+   )
+ }
+ 
+-// 로그아웃 버튼 컴포넌트
+-function LogoutButton() {
+-  return (
+-    <form action="/auth/logout" method="post">
+-      <button
+-        type="submit"
+-        className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+-      >
+-        로그아웃
+-      </button>
+-    </form>
+-  )
+-}
+\ No newline at end of file
+diff --git a/src/app/generate/page.tsx b/app/generate/page.tsx
+similarity index 100%
+rename from src/app/generate/page.tsx
+rename to app/generate/page.tsx
+diff --git a/src/app/globals.css b/app/globals.css
+similarity index 100%
+rename from src/app/globals.css
+rename to app/globals.css
+diff --git a/src/app/layout.tsx b/app/layout.tsx
+similarity index 92%
+rename from src/app/layout.tsx
+rename to app/layout.tsx
+index 6cd9dcc..338a35b 100644
+--- a/src/app/layout.tsx
++++ b/app/layout.tsx
+@@ -1,6 +1,7 @@
+ import type { Metadata } from 'next'
+ import { Inter, Noto_Sans_KR } from 'next/font/google'
+ import './globals.css'
++import { Providers } from './providers'
+ 
+ const inter = Inter({ 
+   subsets: ['latin'],
+@@ -42,7 +43,9 @@ export default function RootLayout({
+   return (
+     <html lang="ko" className={`${inter.variable} ${notoSansKr.variable}`}>
+       <body className="min-h-screen antialiased bg-gradient-to-br from-slate-50 to-blue-50">
+-        {children}
++        <Providers>
++          {children}
++        </Providers>
+       </body>
+     </html>
+   )
+diff --git a/src/app/login/page.tsx b/app/login/page.tsx
+similarity index 76%
+rename from src/app/login/page.tsx
+rename to app/login/page.tsx
+index ba1f445..5708d89 100644
+--- a/src/app/login/page.tsx
++++ b/app/login/page.tsx
+@@ -1,27 +1,29 @@
+ 'use client'
+ 
+ import { useState } from 'react'
+-import { supabaseBrowser } from '@/lib/supabase-browser'
++import { signIn } from 'next-auth/react'
+ 
+ export default function LoginPage() {
+   const [loading, setLoading] = useState(false)
+   const [error, setError] = useState<string | null>(null)
+-  
+-  const supabase = supabaseBrowser()
+ 
+   const signInWithGoogle = async () => {
+     try {
+       setLoading(true)
+       setError(null)
+       
+-      const { error } = await supabase.auth.signInWithOAuth({
+-        provider: 'google',
+-        options: {
+-          redirectTo: `${window.location.origin}/auth/callback`
+-        }
++      const result = await signIn('google', {
++        callbackUrl: '/dashboard',
++        redirect: false
+       })
+       
+-      if (error) throw error
++      if (result?.error) {
++        throw new Error(result.error)
++      }
++      
++      if (result?.ok) {
++        window.location.href = '/dashboard'
++      }
+     } catch (error: any) {
+       console.error('Login error:', error)
+       setError(error.message || '로그인 중 오류가 발생했습니다.')
+@@ -30,28 +32,6 @@ export default function LoginPage() {
+     }
+   }
+ 
+-  const signInWithEmail = async (email: string, password: string) => {
+-    try {
+-      setLoading(true)
+-      setError(null)
+-      
+-      const { error } = await supabase.auth.signInWithPassword({
+-        email,
+-        password
+-      })
+-      
+-      if (error) throw error
+-      
+-      // 로그인 성공 시 대시보드로 이동
+-      window.location.href = '/dashboard'
+-    } catch (error: any) {
+-      console.error('Email login error:', error)
+-      setError(error.message || '이메일 로그인 중 오류가 발생했습니다.')
+-    } finally {
+-      setLoading(false)
+-    }
+-  }
+-
+   return (
+     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+       <div className="max-w-md w-full space-y-8">
+@@ -87,7 +67,7 @@ export default function LoginPage() {
+                     <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                     <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                   </svg>
+-                  Google로 계속
++                  구글로 계속하기
+                 </>
+               )}
+             </button>
+diff --git a/src/app/page.tsx b/app/page.tsx
+similarity index 100%
+rename from src/app/page.tsx
+rename to app/page.tsx
+diff --git a/app/providers.tsx b/app/providers.tsx
+new file mode 100644
+index 0000000..0c096a6
+--- /dev/null
++++ b/app/providers.tsx
+@@ -0,0 +1,11 @@
++'use client'
++
++import { SessionProvider } from 'next-auth/react'
++
++export function Providers({ children }: { children: React.ReactNode }) {
++  return (
++    <SessionProvider>
++      {children}
++    </SessionProvider>
++  )
++}
+\ No newline at end of file
+diff --git a/src/app/register/page.tsx b/app/register/page.tsx
+similarity index 100%
+rename from src/app/register/page.tsx
+rename to app/register/page.tsx
+diff --git a/auto-save-deploy.out b/auto-save-deploy.out
+new file mode 100644
+index 0000000..c17d7a0
+--- /dev/null
++++ b/auto-save-deploy.out
+@@ -0,0 +1,589 @@
++[2025-10-12 16:23:45] 🚀 Starting G-Won AI Planner Auto-Save System (Deploy Version)
++[2025-10-12 16:23:45] 📁 Project directory: /home/user/webapp/My-sauna-deploy
++[2025-10-12 16:23:45] ⏰ Commit interval: 120 seconds
++On branch main
++Your branch is up to date with 'origin/main'.
++
++nothing to commit, working tree clean
++[2025-10-12 16:23:45] 📊 Git repository status verified
++[2025-10-12 16:23:45] ✨ No changes to commit
++[2025-10-12 16:23:45] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:25:45] ✨ No changes to commit
++[2025-10-12 16:25:45] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:27:45] ✨ No changes to commit
++[2025-10-12 16:27:45] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:29:45] ✨ No changes to commit
++[2025-10-12 16:29:45] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:31:45] ✨ No changes to commit
++[2025-10-12 16:31:45] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:33:45] ✨ No changes to commit
++[2025-10-12 16:33:45] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:35:45] 📝 Changes detected, committing...
++[main 472d93b] 🔄 Auto-save: 2025-10-12 16:35:45 - Sandbox protection
++ 1 file changed, 5 insertions(+)
++ create mode 100644 next-env.d.ts
++[2025-10-12 16:35:45] ✅ Changes committed successfully
++To https://github.com/kimgwanghee871/My-sauna-good.git
++   143e058..472d93b  main -> main
++[2025-10-12 16:35:46] 🚀 Changes pushed to GitHub successfully
++[2025-10-12 16:35:46] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:37:46] ✨ No changes to commit
++[2025-10-12 16:37:46] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:39:46] ✨ No changes to commit
++[2025-10-12 16:39:46] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:41:46] ✨ No changes to commit
++[2025-10-12 16:41:46] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:43:46] ✨ No changes to commit
++[2025-10-12 16:43:46] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:45:46] ✨ No changes to commit
++[2025-10-12 16:45:46] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:47:46] ✨ No changes to commit
++[2025-10-12 16:47:46] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:50:46] 📝 Changes detected, committing...
++[main a3e7f10] 🔄 Auto-save: 2025-10-12 16:51:02 - Sandbox protection
++ 1 file changed, 7 insertions(+), 2 deletions(-)
++[2025-10-12 16:51:22] ✅ Changes committed successfully
++To https://github.com/kimgwanghee871/My-sauna-good.git
++   3e0c7aa..a3e7f10  main -> main
++[2025-10-12 16:52:34] 🚀 Changes pushed to GitHub successfully
++[2025-10-12 16:52:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:54:34] ✨ No changes to commit
++[2025-10-12 16:54:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:56:34] ✨ No changes to commit
++[2025-10-12 16:56:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 16:58:34] ✨ No changes to commit
++[2025-10-12 16:58:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:00:34] ✨ No changes to commit
++[2025-10-12 17:00:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:02:34] ✨ No changes to commit
++[2025-10-12 17:02:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:04:34] ✨ No changes to commit
++[2025-10-12 17:04:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:06:34] ✨ No changes to commit
++[2025-10-12 17:06:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:08:34] ✨ No changes to commit
++[2025-10-12 17:08:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:10:34] ✨ No changes to commit
++[2025-10-12 17:10:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:12:34] ✨ No changes to commit
++[2025-10-12 17:12:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:14:34] ✨ No changes to commit
++[2025-10-12 17:14:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:16:34] ✨ No changes to commit
++[2025-10-12 17:16:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:18:34] ✨ No changes to commit
++[2025-10-12 17:18:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:20:34] ✨ No changes to commit
++[2025-10-12 17:20:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:22:34] ✨ No changes to commit
++[2025-10-12 17:22:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:24:34] ✨ No changes to commit
++[2025-10-12 17:24:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:26:34] ✨ No changes to commit
++[2025-10-12 17:26:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:28:34] ✨ No changes to commit
++[2025-10-12 17:28:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:35:34] ✨ No changes to commit
++[2025-10-12 17:35:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:37:34] ✨ No changes to commit
++[2025-10-12 17:37:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:39:34] ✨ No changes to commit
++[2025-10-12 17:39:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:46:32] ✨ No changes to commit
++[2025-10-12 17:46:32] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:48:32] ✨ No changes to commit
++[2025-10-12 17:48:32] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:55:31] ✨ No changes to commit
++[2025-10-12 17:55:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:57:31] ✨ No changes to commit
++[2025-10-12 17:57:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 17:59:31] ✨ No changes to commit
++[2025-10-12 17:59:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:17:21] ✨ No changes to commit
++[2025-10-12 18:17:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:19:21] ✨ No changes to commit
++[2025-10-12 18:19:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:21:21] ✨ No changes to commit
++[2025-10-12 18:21:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:23:21] ✨ No changes to commit
++[2025-10-12 18:23:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:25:21] ✨ No changes to commit
++[2025-10-12 18:25:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:27:21] ✨ No changes to commit
++[2025-10-12 18:27:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:29:21] ✨ No changes to commit
++[2025-10-12 18:29:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:31:21] ✨ No changes to commit
++[2025-10-12 18:31:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:33:21] ✨ No changes to commit
++[2025-10-12 18:33:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:35:21] ✨ No changes to commit
++[2025-10-12 18:35:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-12 18:37:21] ✨ No changes to commit
++[2025-10-12 18:37:21] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 01:45:41] ✨ No changes to commit
++[2025-10-13 01:45:41] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 01:47:41] ✨ No changes to commit
++[2025-10-13 01:47:41] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 01:49:41] ✨ No changes to commit
++[2025-10-13 01:49:41] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 01:51:41] ✨ No changes to commit
++[2025-10-13 01:51:41] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 01:53:41] ✨ No changes to commit
++[2025-10-13 01:53:41] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 01:55:41] ✨ No changes to commit
++[2025-10-13 01:55:41] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 01:57:41] ✨ No changes to commit
++[2025-10-13 01:57:41] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 03:25:04] ✨ No changes to commit
++[2025-10-13 03:25:04] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 03:27:08] ✨ No changes to commit
++[2025-10-13 03:27:08] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 03:29:08] ✨ No changes to commit
++[2025-10-13 03:29:08] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 03:31:08] ✨ No changes to commit
++[2025-10-13 03:31:08] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 03:33:08] ✨ No changes to commit
++[2025-10-13 03:33:08] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 04:44:53] ✨ No changes to commit
++[2025-10-13 04:44:53] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 04:46:53] ✨ No changes to commit
++[2025-10-13 04:46:53] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 04:49:22] ✨ No changes to commit
++[2025-10-13 04:49:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 04:51:22] ✨ No changes to commit
++[2025-10-13 04:51:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 04:53:22] ✨ No changes to commit
++[2025-10-13 04:53:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 04:55:22] ✨ No changes to commit
++[2025-10-13 04:55:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 04:57:22] ✨ No changes to commit
++[2025-10-13 04:57:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 04:59:22] ✨ No changes to commit
++[2025-10-13 04:59:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:01:22] ✨ No changes to commit
++[2025-10-13 05:01:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:03:22] ✨ No changes to commit
++[2025-10-13 05:03:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:05:22] ✨ No changes to commit
++[2025-10-13 05:05:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:07:22] ✨ No changes to commit
++[2025-10-13 05:07:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:09:22] ✨ No changes to commit
++[2025-10-13 05:09:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:11:22] ✨ No changes to commit
++[2025-10-13 05:11:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:13:22] ✨ No changes to commit
++[2025-10-13 05:13:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:15:22] ✨ No changes to commit
++[2025-10-13 05:15:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:17:22] ✨ No changes to commit
++[2025-10-13 05:17:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:19:22] ✨ No changes to commit
++[2025-10-13 05:19:22] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:24:37] ✨ No changes to commit
++[2025-10-13 05:24:37] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:26:37] ✨ No changes to commit
++[2025-10-13 05:26:37] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:33:38] ✨ No changes to commit
++[2025-10-13 05:33:38] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:35:38] ✨ No changes to commit
++[2025-10-13 05:35:38] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:37:38] ✨ No changes to commit
++[2025-10-13 05:37:38] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:44:35] ✨ No changes to commit
++[2025-10-13 05:44:35] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:46:35] ✨ No changes to commit
++[2025-10-13 05:46:35] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:53:33] ✨ No changes to commit
++[2025-10-13 05:53:33] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:55:33] ✨ No changes to commit
++[2025-10-13 05:55:33] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 05:57:34] ✨ No changes to commit
++[2025-10-13 05:57:34] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 06:05:01] ✨ No changes to commit
++[2025-10-13 06:05:01] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 06:07:01] ✨ No changes to commit
++[2025-10-13 06:07:01] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 06:14:00] ✨ No changes to commit
++[2025-10-13 06:14:00] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 06:16:00] ✨ No changes to commit
++[2025-10-13 06:16:00] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 06:18:00] ✨ No changes to commit
++[2025-10-13 06:18:00] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:31:48] ✨ No changes to commit
++[2025-10-13 08:31:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:33:48] ✨ No changes to commit
++[2025-10-13 08:33:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:35:48] ✨ No changes to commit
++[2025-10-13 08:35:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:37:48] ✨ No changes to commit
++[2025-10-13 08:37:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:39:48] ✨ No changes to commit
++[2025-10-13 08:39:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:41:48] ✨ No changes to commit
++[2025-10-13 08:41:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:43:48] ✨ No changes to commit
++[2025-10-13 08:43:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:45:48] ✨ No changes to commit
++[2025-10-13 08:45:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:47:48] ✨ No changes to commit
++[2025-10-13 08:47:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:49:48] ✨ No changes to commit
++[2025-10-13 08:49:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:51:48] ✨ No changes to commit
++[2025-10-13 08:51:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:53:48] ✨ No changes to commit
++[2025-10-13 08:53:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:55:48] ✨ No changes to commit
++[2025-10-13 08:55:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:57:48] ✨ No changes to commit
++[2025-10-13 08:57:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 08:59:48] ✨ No changes to commit
++[2025-10-13 08:59:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:01:48] ✨ No changes to commit
++[2025-10-13 09:01:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:03:48] ✨ No changes to commit
++[2025-10-13 09:03:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:05:48] ✨ No changes to commit
++[2025-10-13 09:05:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:07:48] ✨ No changes to commit
++[2025-10-13 09:07:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:09:48] ✨ No changes to commit
++[2025-10-13 09:09:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:11:48] ✨ No changes to commit
++[2025-10-13 09:11:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:13:48] ✨ No changes to commit
++[2025-10-13 09:13:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:15:48] ✨ No changes to commit
++[2025-10-13 09:15:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:17:48] ✨ No changes to commit
++[2025-10-13 09:17:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:19:48] ✨ No changes to commit
++[2025-10-13 09:19:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:21:48] ✨ No changes to commit
++[2025-10-13 09:21:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:23:48] ✨ No changes to commit
++[2025-10-13 09:23:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:25:48] ✨ No changes to commit
++[2025-10-13 09:25:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:27:48] ✨ No changes to commit
++[2025-10-13 09:27:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:29:48] ✨ No changes to commit
++[2025-10-13 09:29:48] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:34:56] ✨ No changes to commit
++[2025-10-13 09:34:56] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:36:56] 📝 Changes detected, committing...
++[main 93a4edb] 🔄 Auto-save: 2025-10-13 09:36:56 - Sandbox protection
++ 2 files changed, 120 insertions(+), 38 deletions(-)
++ create mode 100644 src/app/auth/callback/route.ts
++[2025-10-13 09:36:56] ✅ Changes committed successfully
++fatal: could not read Username for 'https://github.com': No such device or address
++[2025-10-13 09:36:57] ⚠️  Push failed, will retry next cycle
++[2025-10-13 09:36:57] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:38:57] ✨ No changes to commit
++[2025-10-13 09:38:57] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:40:57] ✨ No changes to commit
++[2025-10-13 09:40:57] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:42:57] ✨ No changes to commit
++[2025-10-13 09:42:57] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:44:57] ✨ No changes to commit
++[2025-10-13 09:44:57] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:46:57] ✨ No changes to commit
++[2025-10-13 09:46:57] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:53:56] ✨ No changes to commit
++[2025-10-13 09:53:56] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:55:56] ✨ No changes to commit
++[2025-10-13 09:55:56] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 09:57:56] ✨ No changes to commit
++[2025-10-13 09:57:56] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:00:52] ✨ No changes to commit
++[2025-10-13 10:00:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:02:52] ✨ No changes to commit
++[2025-10-13 10:02:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:04:52] ✨ No changes to commit
++[2025-10-13 10:04:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:06:52] ✨ No changes to commit
++[2025-10-13 10:06:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:08:52] ✨ No changes to commit
++[2025-10-13 10:08:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:10:52] ✨ No changes to commit
++[2025-10-13 10:10:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:12:52] ✨ No changes to commit
++[2025-10-13 10:12:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:14:52] ✨ No changes to commit
++[2025-10-13 10:14:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:16:52] ✨ No changes to commit
++[2025-10-13 10:16:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:18:52] ✨ No changes to commit
++[2025-10-13 10:18:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:20:52] ✨ No changes to commit
++[2025-10-13 10:20:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:22:52] ✨ No changes to commit
++[2025-10-13 10:22:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:24:52] ✨ No changes to commit
++[2025-10-13 10:24:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:26:52] ✨ No changes to commit
++[2025-10-13 10:26:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:28:52] ✨ No changes to commit
++[2025-10-13 10:28:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:30:52] ✨ No changes to commit
++[2025-10-13 10:30:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:32:52] ✨ No changes to commit
++[2025-10-13 10:32:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:34:52] ✨ No changes to commit
++[2025-10-13 10:34:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:36:52] ✨ No changes to commit
++[2025-10-13 10:36:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:38:52] ✨ No changes to commit
++[2025-10-13 10:38:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:40:52] ✨ No changes to commit
++[2025-10-13 10:40:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:42:52] ✨ No changes to commit
++[2025-10-13 10:42:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:44:52] ✨ No changes to commit
++[2025-10-13 10:44:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:46:52] ✨ No changes to commit
++[2025-10-13 10:46:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:48:52] ✨ No changes to commit
++[2025-10-13 10:48:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:50:52] ✨ No changes to commit
++[2025-10-13 10:50:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:52:52] ✨ No changes to commit
++[2025-10-13 10:52:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:54:52] ✨ No changes to commit
++[2025-10-13 10:54:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:56:52] ✨ No changes to commit
++[2025-10-13 10:56:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 10:58:52] ✨ No changes to commit
++[2025-10-13 10:58:52] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:01:18] ✨ No changes to commit
++[2025-10-13 11:01:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:03:18] ✨ No changes to commit
++[2025-10-13 11:03:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:05:18] ✨ No changes to commit
++[2025-10-13 11:05:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:07:18] ✨ No changes to commit
++[2025-10-13 11:07:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:09:18] ✨ No changes to commit
++[2025-10-13 11:09:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:11:18] ✨ No changes to commit
++[2025-10-13 11:11:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:13:18] ✨ No changes to commit
++[2025-10-13 11:13:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:15:18] ✨ No changes to commit
++[2025-10-13 11:15:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:17:18] ✨ No changes to commit
++[2025-10-13 11:17:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:19:18] ✨ No changes to commit
++[2025-10-13 11:19:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:21:18] ✨ No changes to commit
++[2025-10-13 11:21:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:23:18] ✨ No changes to commit
++[2025-10-13 11:23:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:25:18] ✨ No changes to commit
++[2025-10-13 11:25:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:27:18] ✨ No changes to commit
++[2025-10-13 11:27:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:29:18] ✨ No changes to commit
++[2025-10-13 11:29:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:31:18] ✨ No changes to commit
++[2025-10-13 11:31:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:33:18] ✨ No changes to commit
++[2025-10-13 11:33:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:35:18] ✨ No changes to commit
++[2025-10-13 11:35:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:37:18] ✨ No changes to commit
++[2025-10-13 11:37:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:39:18] ✨ No changes to commit
++[2025-10-13 11:39:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:41:18] ✨ No changes to commit
++[2025-10-13 11:41:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:43:18] ✨ No changes to commit
++[2025-10-13 11:43:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:45:18] ✨ No changes to commit
++[2025-10-13 11:45:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:47:18] ✨ No changes to commit
++[2025-10-13 11:47:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:49:18] ✨ No changes to commit
++[2025-10-13 11:49:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:51:18] ✨ No changes to commit
++[2025-10-13 11:51:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:53:18] ✨ No changes to commit
++[2025-10-13 11:53:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:55:18] ✨ No changes to commit
++[2025-10-13 11:55:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:57:18] ✨ No changes to commit
++[2025-10-13 11:57:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 11:59:18] ✨ No changes to commit
++[2025-10-13 11:59:18] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:01:31] ✨ No changes to commit
++[2025-10-13 12:01:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:03:31] ✨ No changes to commit
++[2025-10-13 12:03:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:05:31] ✨ No changes to commit
++[2025-10-13 12:05:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:07:31] ✨ No changes to commit
++[2025-10-13 12:07:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:09:31] ✨ No changes to commit
++[2025-10-13 12:09:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:11:31] ✨ No changes to commit
++[2025-10-13 12:11:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:13:31] ✨ No changes to commit
++[2025-10-13 12:13:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:15:31] ✨ No changes to commit
++[2025-10-13 12:15:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:17:31] ✨ No changes to commit
++[2025-10-13 12:17:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:19:31] ✨ No changes to commit
++[2025-10-13 12:19:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:21:31] ✨ No changes to commit
++[2025-10-13 12:21:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:23:31] ✨ No changes to commit
++[2025-10-13 12:23:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:25:31] ✨ No changes to commit
++[2025-10-13 12:25:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:27:31] ✨ No changes to commit
++[2025-10-13 12:27:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:29:31] ✨ No changes to commit
++[2025-10-13 12:29:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:31:31] ✨ No changes to commit
++[2025-10-13 12:31:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:33:31] ✨ No changes to commit
++[2025-10-13 12:33:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:35:31] ✨ No changes to commit
++[2025-10-13 12:35:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:37:31] ✨ No changes to commit
++[2025-10-13 12:37:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:39:31] ✨ No changes to commit
++[2025-10-13 12:39:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:41:31] ✨ No changes to commit
++[2025-10-13 12:41:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:43:31] ✨ No changes to commit
++[2025-10-13 12:43:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:45:31] ✨ No changes to commit
++[2025-10-13 12:45:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:47:31] ✨ No changes to commit
++[2025-10-13 12:47:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:49:31] ✨ No changes to commit
++[2025-10-13 12:49:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:51:31] ✨ No changes to commit
++[2025-10-13 12:51:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:53:31] ✨ No changes to commit
++[2025-10-13 12:53:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:55:31] ✨ No changes to commit
++[2025-10-13 12:55:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:57:31] ✨ No changes to commit
++[2025-10-13 12:57:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 12:59:31] ✨ No changes to commit
++[2025-10-13 12:59:31] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:05:09] ✨ No changes to commit
++[2025-10-13 13:05:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:07:09] ✨ No changes to commit
++[2025-10-13 13:07:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:09:09] ✨ No changes to commit
++[2025-10-13 13:09:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:11:09] ✨ No changes to commit
++[2025-10-13 13:11:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:13:09] ✨ No changes to commit
++[2025-10-13 13:13:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:15:09] ✨ No changes to commit
++[2025-10-13 13:15:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:17:09] ✨ No changes to commit
++[2025-10-13 13:17:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:19:09] ✨ No changes to commit
++[2025-10-13 13:19:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:21:09] ✨ No changes to commit
++[2025-10-13 13:21:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:23:09] ✨ No changes to commit
++[2025-10-13 13:23:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:25:09] ✨ No changes to commit
++[2025-10-13 13:25:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:27:09] ✨ No changes to commit
++[2025-10-13 13:27:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:29:09] ✨ No changes to commit
++[2025-10-13 13:29:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:31:09] ✨ No changes to commit
++[2025-10-13 13:31:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:33:09] ✨ No changes to commit
++[2025-10-13 13:33:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:35:09] ✨ No changes to commit
++[2025-10-13 13:35:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:37:09] ✨ No changes to commit
++[2025-10-13 13:37:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:39:09] ✨ No changes to commit
++[2025-10-13 13:39:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:41:09] ✨ No changes to commit
++[2025-10-13 13:41:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:43:09] ✨ No changes to commit
++[2025-10-13 13:43:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:45:09] ✨ No changes to commit
++[2025-10-13 13:45:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:47:09] ✨ No changes to commit
++[2025-10-13 13:47:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:49:09] ✨ No changes to commit
++[2025-10-13 13:49:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:51:09] ✨ No changes to commit
++[2025-10-13 13:51:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:53:09] ✨ No changes to commit
++[2025-10-13 13:53:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:55:09] ✨ No changes to commit
++[2025-10-13 13:55:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:57:09] ✨ No changes to commit
++[2025-10-13 13:57:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 13:59:09] ✨ No changes to commit
++[2025-10-13 13:59:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:01:09] ✨ No changes to commit
++[2025-10-13 14:01:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:03:09] ✨ No changes to commit
++[2025-10-13 14:03:09] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:05:51] ✨ No changes to commit
++[2025-10-13 14:05:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:07:51] ✨ No changes to commit
++[2025-10-13 14:07:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:09:51] ✨ No changes to commit
++[2025-10-13 14:09:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:11:51] ✨ No changes to commit
++[2025-10-13 14:11:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:13:51] ✨ No changes to commit
++[2025-10-13 14:13:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:15:51] ✨ No changes to commit
++[2025-10-13 14:15:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:17:51] ✨ No changes to commit
++[2025-10-13 14:17:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:19:51] ✨ No changes to commit
++[2025-10-13 14:19:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:21:51] ✨ No changes to commit
++[2025-10-13 14:21:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:23:51] ✨ No changes to commit
++[2025-10-13 14:23:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:25:51] ✨ No changes to commit
++[2025-10-13 14:25:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:27:51] ✨ No changes to commit
++[2025-10-13 14:27:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:29:51] ✨ No changes to commit
++[2025-10-13 14:29:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:31:51] ✨ No changes to commit
++[2025-10-13 14:31:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:33:51] ✨ No changes to commit
++[2025-10-13 14:33:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:35:51] ✨ No changes to commit
++[2025-10-13 14:35:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:37:51] ✨ No changes to commit
++[2025-10-13 14:37:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:39:51] ✨ No changes to commit
++[2025-10-13 14:39:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:41:51] ✨ No changes to commit
++[2025-10-13 14:41:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:43:51] ✨ No changes to commit
++[2025-10-13 14:43:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:45:51] ✨ No changes to commit
++[2025-10-13 14:45:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:47:51] ✨ No changes to commit
++[2025-10-13 14:47:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:49:51] ✨ No changes to commit
++[2025-10-13 14:49:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:51:51] ✨ No changes to commit
++[2025-10-13 14:51:51] ⏳ Waiting 120 seconds for next check...
++[2025-10-13 14:53:51] ✨ No changes to commit
++[2025-10-13 14:53:51] ⏳ Waiting 120 seconds for next check...
+diff --git a/auto-save-deploy.sh b/auto-save-deploy.sh
+new file mode 100755
+index 0000000..a037541
+--- /dev/null
++++ b/auto-save-deploy.sh
+@@ -0,0 +1,67 @@
++#!/bin/bash
++
++# G-Won AI Planner Auto-Save System for Deployment
++# Protects against sandbox 1-hour deletion problem
++
++PROJECT_DIR="/home/user/webapp/My-sauna-deploy"
++LOG_FILE="/home/user/webapp/auto-save-deploy.log"
++COMMIT_INTERVAL=120  # 2 minutes
++
++# Function to log with timestamp
++log_message() {
++    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
++}
++
++# Function to auto-commit changes
++auto_commit() {
++    cd "$PROJECT_DIR" || {
++        log_message "❌ ERROR: Cannot access project directory $PROJECT_DIR"
++        return 1
++    }
++    
++    # Check for changes
++    if [[ -n $(git status --porcelain) ]]; then
++        log_message "📝 Changes detected, committing..."
++        
++        git add .
++        
++        COMMIT_MSG="🔄 Auto-save: $(date '+%Y-%m-%d %H:%M:%S') - Sandbox protection"
++        
++        if git commit -m "$COMMIT_MSG"; then
++            log_message "✅ Changes committed successfully"
++            
++            # Try to push to GitHub
++            if git push origin main; then
++                log_message "🚀 Changes pushed to GitHub successfully"
++            else
++                log_message "⚠️  Push failed, will retry next cycle"
++            fi
++        else
++            log_message "⚠️  Commit failed"
++        fi
++    else
++        log_message "✨ No changes to commit"
++    fi
++}
++
++# Main execution
++log_message "🚀 Starting G-Won AI Planner Auto-Save System (Deploy Version)"
++log_message "📁 Project directory: $PROJECT_DIR"
++log_message "⏰ Commit interval: $COMMIT_INTERVAL seconds"
++
++# Verify project directory exists
++if [[ ! -d "$PROJECT_DIR" ]]; then
++    log_message "❌ ERROR: Project directory does not exist: $PROJECT_DIR"
++    exit 1
++fi
++
++# Initial status check
++cd "$PROJECT_DIR" && git status
++log_message "📊 Git repository status verified"
++
++# Main loop
++while true; do
++    auto_commit
++    log_message "⏳ Waiting $COMMIT_INTERVAL seconds for next check..."
++    sleep $COMMIT_INTERVAL
++done
+\ No newline at end of file
+diff --git a/src/components/LogoutButton.tsx b/src/components/LogoutButton.tsx
+new file mode 100644
+index 0000000..30c06db
+--- /dev/null
++++ b/src/components/LogoutButton.tsx
+@@ -0,0 +1,14 @@
++'use client'
++
++import { signOut } from 'next-auth/react'
++
++export default function LogoutButton() {
++  return (
++    <button
++      onClick={() => signOut({ callbackUrl: '/login' })}
++      className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
++    >
++      로그아웃
++    </button>
++  )
++}
+\ No newline at end of file
+-- 
+2.39.5
+
