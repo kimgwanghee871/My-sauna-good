@@ -1,8 +1,14 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 
+const authOptions = {
+  providers: [],
+  session: { strategy: 'jwt' as const },
+  secret: process.env.NEXTAUTH_SECRET,
+}
+
 export default async function DashboardPage() {
-  const session = await getServerSession()
+  const session = await getServerSession(authOptions)
   
   if (!session) {
     redirect('/login')
@@ -13,7 +19,6 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* 헤더 */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:p-6">
             <div className="flex items-center justify-between">
@@ -25,16 +30,11 @@ export default async function DashboardPage() {
                   안녕하세요, {user?.email || user?.name}님!
                 </p>
               </div>
-              <div className="flex space-x-3">
-                <LogoutButton />
-              </div>
             </div>
           </div>
         </div>
 
-        {/* 콘텐츠 */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* 사업계획서 목록 */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
@@ -49,7 +49,6 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* 사용자 정보 */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
@@ -64,24 +63,11 @@ export default async function DashboardPage() {
                   <label className="text-sm font-medium text-gray-500">이름</label>
                   <p className="text-sm text-gray-900">{user?.name || '미설정'}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">플랜</label>
-                  <p className="text-sm text-gray-900">Free</p>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
-
-// 로그아웃 버튼 컴포넌트 - 별도 파일로 분리 예정
-function LogoutButton() {
-  return (
-    <button className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
-      로그아웃
-    </button>
   )
 }
