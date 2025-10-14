@@ -6,7 +6,7 @@ import { TemplatesSection } from '@/components/sections/TemplatesSection'
 import { PricingSection } from '@/components/sections/PricingSection'
 import { TestimonialsSection } from '@/components/sections/TestimonialsSection'
 
-export default function HomePage() {
+export default async function HomePage() {
   return (
     <div className="min-h-screen">
       <Header />

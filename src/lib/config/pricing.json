@@ -1,4 +1,139 @@
 {
+  "landing_pricing": {
+    "hero": {
+      "title": "10분 내 고품질 사업계획서 자동 생성",
+      "subtitle": "월 구독 + 초과 1회 9,900원 · 미사용 크레딧 50% 이월",
+      "cta_primary": "지금 시작하기",
+      "cta_secondary": "100p+ 맞춤 문의",
+      "bullets": [
+        "크레딧 과금: 생성 1=1크레딧, 재생성 0.2크레딧",
+        "오버리지 9,900원: 월 크레딧 소진 시 1회당 9,900원 추가",
+        "롤오버 50%: 미사용 크레딧의 50%가 다음 달로 이월"
+      ],
+      "billing_toggle": {
+        "monthly_label": "월간 결제",
+        "annual_label": "연간 결제(2개월 무료)",
+        "annual_discount_rate": 0.1667
+      }
+    },
+    "plans": [
+      {
+        "id": "free",
+        "name": "Free",
+        "tagline": "체험용",
+        "price_monthly": 0,
+        "credits": 1,
+        "chips": [
+          { "label": "1회", "desc": "월 생성" },
+          { "label": "4종", "desc": "시각화" },
+          { "label": "기본", "desc": "지원" }
+        ],
+        "bullets": [
+          "월 1회 생성 (크레딧 1)",
+          "모든 템플릿 이용 가능",
+          "PDF/DOCX 다운로드 · 워터마크 포함",
+          "기본 고객지원",
+          "시각화 4종 한도",
+          "일반 큐(우선순위 낮음)",
+          "오버리지 불가"
+        ],
+        "cta": "무료로 시작",
+        "watermark": true,
+        "popular": false,
+        "enabled": true
+      },
+      {
+        "id": "starter",
+        "name": "Starter",
+        "tagline": "개인 창업자",
+        "price_monthly": 29000,
+        "credits": 3,
+        "chips": [
+          { "label": "3회", "desc": "월 생성" },
+          { "label": "8종", "desc": "시각화" },
+          { "label": "링크검증", "desc": "" }
+        ],
+        "bullets": [
+          "월 3회 생성 (크레딧 3)",
+          "모든 템플릿 · 섹션별 재생성(0.2크레딧/섹션)",
+          "PDF/DOCX(워터마크 없음)",
+          "링크 검증(기본 인용)",
+          "시각화 8종 한도",
+          "우선 큐(중간)",
+          "오버리지 9,900원/1회, 롤오버 50%"
+        ],
+        "cta": "업그레이드",
+        "watermark": false,
+        "popular": false,
+        "enabled": true
+      },
+      {
+        "id": "growth",
+        "name": "Growth",
+        "tagline": "가장 인기",
+        "price_monthly": 69000,
+        "credits": 8,
+        "chips": [
+          { "label": "8회", "desc": "월 생성" },
+          { "label": "12종", "desc": "시각화" },
+          { "label": "링크+404", "desc": "" }
+        ],
+        "bullets": [
+          "월 8회 생성 (크레딧 8)",
+          "모든 템플릿 · 섹션 재생성(0.2/섹션)",
+          "PDF/DOCX(워터마크 없음)",
+          "링크+404 감지",
+          "시각화 12종 한도",
+          "우선 큐(상)",
+          "오버리지 9,900원/1회, 롤오버 50%"
+        ],
+        "cta": "업그레이드",
+        "watermark": false,
+        "popular": true,
+        "enabled": true
+      },
+      {
+        "id": "pro",
+        "name": "Pro",
+        "tagline": "전문가용",
+        "price_monthly": 149000,
+        "credits": 20,
+        "chips": [
+          { "label": "20회", "desc": "월 생성" },
+          { "label": "18종", "desc": "시각화" },
+          { "label": "대체출처", "desc": "" }
+        ],
+        "bullets": [
+          "월 20회 생성 (크레딧 20)",
+          "모든 템플릿 · 섹션 재생성(0.2/섹션)",
+          "PDF/DOCX(워터마크 없음)",
+          "대체 출처 제안(인용 강화)",
+          "시각화 18종 한도",
+          "최우선 큐 · 이메일 우선 지원",
+          "템플릿 커스터마이징(텍스트 블록 수준)",
+          "오버리지 9,900원/1회, 롤오버 50%"
+        ],
+        "cta": "업그레이드",
+        "watermark": false,
+        "popular": false,
+        "enabled": true
+      }
+    ],
+    "enterprise": {
+      "enabled": true,
+      "name": "Enterprise",
+      "title": "100페이지 이상 맞춤 제작(문의형)",
+      "bullets": [
+        "100p+ 맞춤 제작(문의형)",
+        "각주 커버리지 90~100%, 법령/정책 심층 검증",
+        "시각화 25종+, 기관 서식 매핑",
+        "전담 지원 · SLA 보장"
+      ],
+      "cta": "상담 문의",
+      "response_sla": "24시간 내 응답",
+      "link": "/enterprise/request"
+    }
+  },
   "pricing": {
     "currency": "KRW",
     "rollover_rate": 0.5,

@@ -74,11 +74,58 @@ export interface PricingConfig {
   }
 }
 
+// Landing pricing interfaces
+export interface LandingPricingPlan {
+  id: string
+  name: string
+  tagline: string
+  price_monthly: number
+  credits: number
+  chips: Array<{ label: string; desc: string }>
+  bullets: string[]
+  cta: string
+  watermark: boolean
+  popular: boolean
+  enabled: boolean
+}
+
+export interface LandingPricingConfig {
+  hero: {
+    title: string
+    subtitle: string
+    cta_primary: string
+    cta_secondary: string
+    bullets: string[]
+    billing_toggle: {
+      monthly_label: string
+      annual_label: string
+      annual_discount_rate: number
+    }
+  }
+  plans: LandingPricingPlan[]
+  enterprise: {
+    enabled: boolean
+    name: string
+    title: string
+    bullets: string[]
+    cta: string
+    response_sla: string
+    link: string
+  }
+}
+
 // Fetch pricing config (with caching in production)
 export async function fetchPricingConfig(): Promise<PricingConfig> {
   // In a real app, this might fetch from an API or database
   // For now, use the local JSON file
   return pricingConfig.pricing as PricingConfig
+}
+
+// Fetch landing pricing config
+export async function fetchLandingPricingConfig(): Promise<LandingPricingConfig> {
+  // In a real app, this might fetch from remote config
+  // For now, use the local JSON file
+  return (pricingConfig as any).landing_pricing as LandingPricingConfig
 }
 
 // Get enabled plans only (filters out disabled plans)
