@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@/components/ui/Button'
+import { useCheckout } from '@/app/providers/CheckoutProvider'
 
 interface Chip {
   label: string
@@ -24,6 +24,8 @@ interface PlanCardProps {
 }
 
 export function PlanCard({ plan, billing }: PlanCardProps) {
+  const { startCheckout, loadingPlan } = useCheckout()
+  
   // Calculate price based on billing period
   const price = billing === 'monthly' 
     ? plan.price_monthly 
@@ -32,6 +34,15 @@ export function PlanCard({ plan, billing }: PlanCardProps) {
   const formatPrice = (price: number) => {
     if (price === 0) return '무료'
     return new Intl.NumberFormat('ko-KR').format(price) + '원'
+  }
+
+  const handleSelectPlan = () => {
+    if (plan.id === 'free') {
+      // Free plan - redirect to signup/login
+      window.location.href = '/auth/register'
+    } else {
+      startCheckout(plan.id, billing)
+    }
   }
 
   return (
@@ -74,9 +85,9 @@ export function PlanCard({ plan, billing }: PlanCardProps) {
         </div>
 
         {/* Chips */}
-        <div className="flex justify-center space-x-2 mb-4">
+        <div className="flex justify-center space-x-2 mb-4 flex-wrap">
           {plan.chips.map((chip, index) => (
-            <div key={index} className="bg-gray-100 px-3 py-1 rounded-full text-xs">
+            <div key={index} className="bg-gray-100 px-3 py-1 rounded-full text-xs mb-1">
               <span className="font-medium">{chip.label}</span>
               {chip.desc && <span className="text-gray-500 ml-1">{chip.desc}</span>}
             </div>
@@ -97,13 +108,17 @@ export function PlanCard({ plan, billing }: PlanCardProps) {
       </ul>
 
       {/* CTA Button */}
-      <Button
-        variant={plan.popular ? 'primary' : 'outline'}
-        fullWidth
-        className={plan.popular ? 'text-lg' : ''}
+      <button
+        onClick={handleSelectPlan}
+        disabled={!!loadingPlan}
+        className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+          plan.popular 
+            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg' 
+            : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50'
+        } ${plan.popular ? 'text-lg' : ''}`}
       >
-        {plan.cta}
-      </Button>
+        {loadingPlan === plan.id ? '처리 중...' : plan.cta}
+      </button>
     </div>
   )
 }

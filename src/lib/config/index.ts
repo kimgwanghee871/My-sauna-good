@@ -107,8 +107,10 @@ export interface LandingPricingConfig {
     enabled: boolean
     name: string
     title: string
+    badges: string[]
     bullets: string[]
-    cta: string
+    cta_primary: string
+    cta_secondary: string
     response_sla: string
     link: string
   }

@@ -123,13 +123,15 @@
       "enabled": true,
       "name": "Enterprise",
       "title": "100페이지 이상 맞춤 제작(문의형)",
+      "badges": ["맞춤", "법령/정책 검증", "SLA"],
       "bullets": [
         "100p+ 맞춤 제작(문의형)",
         "각주 커버리지 90~100%, 법령/정책 심층 검증",
         "시각화 25종+, 기관 서식 매핑",
         "전담 지원 · SLA 보장"
       ],
-      "cta": "상담 문의",
+      "cta_primary": "상담 문의",
+      "cta_secondary": "24시간 내 응답",
       "response_sla": "24시간 내 응답",
       "link": "/enterprise/request"
     }
