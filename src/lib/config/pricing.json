@@ -1,0 +1,130 @@
+{
+  "pricing": {
+    "currency": "KRW",
+    "rollover_rate": 0.5,
+    "overage": {
+      "enabled": true,
+      "price_krw": 9900
+    },
+    "regen_cost_unit": 0.2,
+    "plans": [
+      {
+        "id": "free",
+        "name": "Free",
+        "price": 0,
+        "credits": 1,
+        "watermark": true,
+        "viz": 4,
+        "verify": "basic",
+        "enabled": true,
+        "popular": false,
+        "description": "무료 1회 생성",
+        "features": [
+          "사업계획서 1회 생성",
+          "기본 시각화 4종",
+          "기본 검증",
+          "워터마크 포함 PDF"
+        ]
+      },
+      {
+        "id": "starter",
+        "name": "Starter", 
+        "price": 29000,
+        "credits": 3,
+        "watermark": false,
+        "viz": 8,
+        "verify": "link",
+        "enabled": true,
+        "popular": false,
+        "description": "월 3회 · 초안→완성 자동",
+        "features": [
+          "사업계획서 월 3회 생성",
+          "시각화 8종",
+          "링크 검증",
+          "워터마크 없는 PDF",
+          "개인 공유"
+        ]
+      },
+      {
+        "id": "growth",
+        "name": "Growth",
+        "price": 69000, 
+        "credits": 8,
+        "watermark": false,
+        "viz": 12,
+        "verify": "link404",
+        "enabled": true,
+        "popular": true,
+        "description": "월 8회 · 지원사업/IR 대응",
+        "features": [
+          "사업계획서 월 8회 생성",
+          "시각화 12종",
+          "링크+404 검증",
+          "워터마크 없는 PDF",
+          "개인 공유",
+          "미사용 크레딧 50% 이월"
+        ]
+      },
+      {
+        "id": "pro",
+        "name": "Pro",
+        "price": 149000,
+        "credits": 20,
+        "watermark": false,
+        "viz": 18,
+        "verify": "alt",
+        "enabled": true,
+        "popular": false,
+        "description": "월 20회 · 인용·검증 강화",
+        "features": [
+          "사업계획서 월 20회 생성",
+          "시각화 18종",
+          "대체출처 검증",
+          "워터마크 없는 PDF",
+          "개인 공유",
+          "미사용 크레딧 50% 이월",
+          "우선 지원"
+        ]
+      }
+    ],
+    "enterprise": {
+      "enabled": true,
+      "cta": "문의하기",
+      "title": "Enterprise",
+      "subtitle": "100p+ 맞춤 제작 · 견적형",
+      "description": "공공기관 제출 100p+ 전문 보고서 — 견적 문의",
+      "features": [
+        "각주 90~100%",
+        "정책·법령 검증", 
+        "시각화 25+",
+        "맞춤형 템플릿",
+        "전담 매니저",
+        "24시간 응답 SLA"
+      ],
+      "slo": {
+        "firstResponseHours": 24
+      }
+    },
+    "ab": {
+      "showAnnualToggle": true,
+      "showComparison": true,
+      "annualDiscount": 2
+    },
+    "copy": {
+      "hero": {
+        "title": "10분 내 고품질 사업계획서 자동 생성",
+        "subtitle": "월 구독 + 초과 1회 9,900원 · 미사용 크레딧 50% 이월",
+        "cta_primary": "지금 시작(무료 1회)",
+        "cta_secondary": "100p+ 맞춤 문의"
+      },
+      "overage": {
+        "title": "추가 생성",
+        "description": "월 크레딧 소진 시 1회당 9,900원으로 추가 생성 가능"
+      },
+      "rollover": {
+        "title": "크레딧 이월",
+        "description": "미사용 크레딧의 50%가 다음 달로 자동 이월"
+      }
+    }
+  }
+}
