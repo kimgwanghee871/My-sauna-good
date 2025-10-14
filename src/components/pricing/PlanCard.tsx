@@ -63,17 +63,17 @@ export default function PlanCard({
   return (
     <div className={`
       relative bg-white rounded-2xl border-2 transition-all duration-200 hover:shadow-lg
-      ${plan.popular 
+      ${plan.badge === 'most_popular'
         ? 'border-blue-500 shadow-lg ring-2 ring-blue-100' 
         : 'border-gray-200 hover:border-gray-300'
       }
       ${isCurrentPlan ? 'ring-2 ring-green-100 border-green-500' : ''}
     `}>
-      {/* Popular Badge */}
-      {plan.popular && (
+      {/* Badge */}
+      {plan.badge === 'most_popular' && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white">
-            인기
+            가장 인기
           </span>
         </div>
       )}
@@ -81,7 +81,8 @@ export default function PlanCard({
       <div className="p-6">
         {/* Header */}
         <div className="text-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-1">{plan.name}</h3>
+          <p className="text-xs text-gray-500 mb-3">{plan.subtitle}</p>
           <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
           
           <div className="mb-4">
@@ -146,7 +147,7 @@ export default function PlanCard({
             w-full py-3 px-4 rounded-lg font-semibold transition-colors
             ${isCurrentPlan
               ? 'bg-green-100 text-green-700 cursor-default'
-              : plan.popular
+              : plan.badge === 'most_popular'
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-gray-900 text-white hover:bg-gray-800'
             }

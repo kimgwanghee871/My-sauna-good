@@ -8,10 +8,14 @@ export interface PricingPlan {
   watermark: boolean
   viz: number
   verify: string
+  priority: string
   enabled: boolean
-  popular?: boolean
+  badge?: string | null
+  subtitle: string
   description: string
   features: string[]
+  target: string
+  customize?: string
 }
 
 export interface EnterpriseConfig {
@@ -20,7 +24,10 @@ export interface EnterpriseConfig {
   title: string
   subtitle: string
   description: string
+  bullets: string[]
   features: string[]
+  target: string
+  link: string
   slo: {
     firstResponseHours: number
   }

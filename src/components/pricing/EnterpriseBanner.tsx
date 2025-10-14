@@ -18,11 +18,11 @@ export default function EnterpriseBanner({ config, onClick }: EnterpriseBannerPr
             <h3 className="text-2xl font-bold mb-2">{config.title}</h3>
             <p className="text-purple-100 mb-4">{config.description}</p>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              {config.features.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              {config.bullets.map((bullet, index) => (
+                <div key={index} className="flex items-start space-x-2">
                   <svg 
-                    className="w-4 h-4 text-purple-200" 
+                    className="w-4 h-4 text-purple-200 mt-0.5 flex-shrink-0" 
                     fill="currentColor" 
                     viewBox="0 0 20 20"
                   >
@@ -32,7 +32,7 @@ export default function EnterpriseBanner({ config, onClick }: EnterpriseBannerPr
                       clipRule="evenodd" 
                     />
                   </svg>
-                  <span className="text-purple-100">{feature}</span>
+                  <span className="text-purple-100">{bullet}</span>
                 </div>
               ))}
             </div>

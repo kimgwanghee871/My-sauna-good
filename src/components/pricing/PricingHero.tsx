@@ -40,20 +40,19 @@ export default function PricingHero({
           </button>
         </div>
 
-        {/* Key Features */}
+        {/* Core Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 text-sm">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-gray-600">{config.copy.overage.description}</span>
-          </div>
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-gray-600">{config.copy.rollover.description}</span>
-          </div>
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            <span className="text-gray-600">부분 재생성 0.2회 차감</span>
-          </div>
+          {config.copy.core_features.map((feature, index) => (
+            <div key={index} className="flex items-center justify-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${
+                index === 0 ? 'bg-green-500' : 
+                index === 1 ? 'bg-blue-500' : 'bg-purple-500'
+              }`}></div>
+              <span className="text-gray-600">
+                <strong className="font-medium">{feature.title}:</strong> {feature.description}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
