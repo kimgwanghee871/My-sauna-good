@@ -66,7 +66,7 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
   const getFieldLabel = (field: FieldKey): string => {
     const templateConfig = FIELD_CONFIGS[templateKey]
     if (templateConfig && templateConfig[field]) {
-      return templateConfig[field].label
+      return templateConfig[field]!.label
     }
     return DEFAULT_LABELS[field]
   }
@@ -176,8 +176,8 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
     const schemaConfig = QnaSchemaDefinition[field]
     
     return {
-      label: fieldConfig?.label || getFieldLabel(field),
-      placeholder: fieldConfig?.placeholder || `${getFieldLabel(field)}을(를) 입력해주세요...`,
+      label: fieldConfig?.label || DEFAULT_LABELS[field],
+      placeholder: fieldConfig?.placeholder || `${DEFAULT_LABELS[field]}을(를) 입력해주세요...`,
       hint: fieldConfig?.hint,
       maxLength: schemaConfig.max,
       required: schemaConfig.required
