@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
+import CreateBusinessPlanButton from './_components/CreateBusinessPlanButton'
 
 export default async function DashboardPage() {
   const session = await getServerSession()
@@ -38,9 +39,7 @@ export default async function DashboardPage() {
               </h2>
               <div className="text-center py-8">
                 <p className="text-gray-500">아직 생성된 사업계획서가 없습니다.</p>
-                <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                  새 사업계획서 생성
-                </button>
+                <CreateBusinessPlanButton />
               </div>
             </div>
           </div>
