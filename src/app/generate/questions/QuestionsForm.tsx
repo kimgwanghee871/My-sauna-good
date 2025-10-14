@@ -56,10 +56,18 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
 
   // Fallback analytics functions
   const analytics = {
-    trackFormFieldChanged: () => {},
-    trackFormAutoSaved: () => {},
-    trackFormSubmitted: () => {},
-    trackValidationError: () => {}
+    trackFormFieldChanged: (field: string, value: string, templateKey: string) => {
+      console.debug('[analytics] field changed', { field, valueLength: value.length, templateKey })
+    },
+    trackFormAutoSaved: (templateKey: string, completedFields: number, totalFields: number) => {
+      console.debug('[analytics] auto saved', { templateKey, completedFields, totalFields })
+    },
+    trackFormSubmitted: (templateKey: string, completedFields: number, totalFields: number, startTime: number) => {
+      console.debug('[analytics] form submitted', { templateKey, completedFields, totalFields, duration: Date.now() - startTime })
+    },
+    trackValidationError: (field: string, errorType: string, errorMessage: string, templateKey: string) => {
+      console.debug('[analytics] validation error', { field, errorType, errorMessage, templateKey })
+    }
   }
 
   // 필드 라벨 가져오기 함수
@@ -108,7 +116,7 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
       setLastSaved(new Date())
       
       // Analytics tracking
-      const completedFields = Object.values(data).filter(v => v.trim() !== '').length
+      const completedFields = Object.values(data).filter(v => typeof v === 'string' && v.trim() !== '').length
       analytics.trackFormAutoSaved(templateKey, completedFields, 10)
       
     } catch (error) {
@@ -199,7 +207,7 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
       await autoSave(formData)
 
       // Analytics tracking
-      const completedFields = Object.values(formData).filter(v => v.trim() !== '').length
+      const completedFields = Object.values(formData).filter(v => typeof v === 'string' && v.trim() !== '').length
       analytics.trackFormSubmitted(templateKey, completedFields, 10, formStartTime.current)
       
       // 생성 페이지로 이동
