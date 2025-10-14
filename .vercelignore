@@ -1,0 +1,11 @@
+# Ignore files that should not be deployed
+*.log
+*.tmp
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.DS_Store
+Thumbs.db
+dashboard_fixed.ts
+dashboard_fixed.tsx
