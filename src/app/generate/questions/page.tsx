@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import QuestionsForm from './QuestionsForm'
 import { TEMPLATE_CONFIGS } from '../../../lib/schemas/template.schema'
+import { getTemplateMessages } from '../../../lib/i18n'
 
 // SSR 강제 설정
 export const dynamic = 'force-dynamic'
@@ -32,6 +33,7 @@ export default async function Page({
   }
 
   const template = TEMPLATE_CONFIGS[templateKey]
+  const templateMessages = getTemplateMessages(templateKey)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -42,10 +44,10 @@ export default async function Page({
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  사업계획서 질문 입력
+                  {templateMessages.title}
                 </h1>
                 <p className="mt-1 text-sm text-gray-600">
-                  {template.title} 템플릿을 위한 기본 정보를 입력해주세요
+                  {templateMessages.subtitle}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -98,12 +100,16 @@ export default async function Page({
           <div className="p-6">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                기본 정보 입력
+                {templateMessages.title}
               </h2>
-              <p className="text-sm text-gray-600">
-                총 10개 질문에 답변해주시면 {template.title} 사업계획서가 자동 생성됩니다.
-                작성 중인 내용은 자동으로 저장됩니다.
+              <p className="text-sm text-gray-600 mb-3">
+                {templateMessages.subtitle}
               </p>
+              <div className="space-y-1 text-xs text-gray-500">
+                <p>• 입력한 내용은 자동 저장돼요. 언제든 이어서 작성할 수 있어요.</p>
+                <p>• 모든 항목은 나중에 다시 고칠 수 있어요.</p>
+                <p>• 민감한 개인정보(주민번호 등)는 입력하지 말아 주세요.</p>
+              </div>
             </div>
             
             {/* 질문 폼 */}

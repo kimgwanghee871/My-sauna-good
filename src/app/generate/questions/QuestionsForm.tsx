@@ -1,17 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import QnaField from '../_components/QnaField'
 import AutosaveBadge from '../_components/AutosaveBadge'
-import { 
-  type QnaInput, 
-  QnaSchemaDefinition, 
-  FIELD_CONFIGS 
-} from '../../../lib/schemas/qset.schema'
-
-type TemplateKey = 'government' | 'investment' | 'loan'
-type FieldKey = keyof QnaInput
+import ProgressBar from '../_components/ProgressBar'
+import { useProgress } from './useProgress'
+import { useAutosave } from './useAutosave'
+import { getTemplateMessages } from '../../../lib/i18n'
+import { type QnaInput } from '../../../lib/schemas/qset.schema'
+import type { TemplateKey } from '../../../lib/schemas/template.schema'
 
 // 기본 폼 데이터
 const initialFormData: QnaInput = {
@@ -27,276 +25,228 @@ const initialFormData: QnaInput = {
   team: ''
 }
 
-// 기본 라벨 정의
-const DEFAULT_LABELS: Record<FieldKey, string> = {
-  companyName: '회사/프로젝트명',
-  problem: '해결하려는 문제',
-  solution: '해결책/제품 설명',
-  targetCustomer: '목표 고객',
-  competition: '경쟁 현황 및 차별점',
-  bizModel: '수익 모델',
-  fundingNeed: '필요 자금 및 용도',
-  financeSnapshot: '재무 현황 요약',
-  roadmap: '추진 계획',
-  team: '팀 구성'
-}
-
 export default function QuestionsForm({ templateKey }: { templateKey: TemplateKey }) {
   const router = useRouter()
   const formStartTime = useRef(Date.now())
   
   const [formData, setFormData] = useState<QnaInput>(initialFormData)
-  const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({})
-  const [isAutoSaving, setIsAutoSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [errors, setErrors] = useState<Partial<Record<keyof QnaInput, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 로컬스토리지 키
+  // Get template-specific messages
+  const templateMessages = getTemplateMessages(templateKey)
+  
+  // Custom hooks
   const storageKey = `qna_form_${templateKey}`
+  const { saved } = useAutosave(storageKey, formData)
+  const { filled, total, ratio, encourageMessage } = useProgress(formData)
 
-  // Fallback analytics functions
-  const analytics = {
-    trackFormFieldChanged: (field: string, value: string, templateKey: string) => {
-      console.debug('[analytics] field changed', { field, valueLength: value.length, templateKey })
-    },
-    trackFormAutoSaved: (templateKey: string, completedFields: number, totalFields: number) => {
-      console.debug('[analytics] auto saved', { templateKey, completedFields, totalFields })
-    },
-    trackFormSubmitted: (templateKey: string, completedFields: number, totalFields: number, startTime: number) => {
-      console.debug('[analytics] form submitted', { templateKey, completedFields, totalFields, duration: Date.now() - startTime })
-    },
-    trackValidationError: (field: string, errorType: string, errorMessage: string, templateKey: string) => {
-      console.debug('[analytics] validation error', { field, errorType, errorMessage, templateKey })
-    }
-  }
-
-  // 필드 라벨 가져오기 함수
-  const getFieldLabel = (field: FieldKey): string => {
-    const templateConfig = FIELD_CONFIGS[templateKey]
-    if (templateConfig && templateConfig[field]) {
-      return templateConfig[field]!.label
-    }
-    return DEFAULT_LABELS[field]
-  }
-
-  // 검증 메시지 함수
-  const getValidationMessage = (type: string, params?: any): string => {
-    if (type === 'required') return `${params?.field}은(는) 필수입니다`
-    if (type === 'minLength') return `최소 ${params?.min}자 이상 입력해주세요`
-    if (type === 'maxLength') return `최대 ${params?.max}자까지 입력 가능합니다`
-    return '올바른 형식으로 입력해주세요'
-  }
-
-  // 로컬스토리지에서 데이터 로드
+  // Load saved data on mount
   useEffect(() => {
     const saved = localStorage.getItem(storageKey)
     if (saved) {
       try {
         const parsedData = JSON.parse(saved)
         setFormData({ ...initialFormData, ...parsedData })
-        setLastSaved(new Date(parsedData._lastSaved || Date.now()))
       } catch (error) {
         console.warn('Failed to parse saved form data:', error)
       }
     }
   }, [storageKey])
 
-  // 자동 저장 (디바운싱)
-  const autoSave = useCallback(async (data: QnaInput) => {
-    setIsAutoSaving(true)
-    
-    try {
-      // 로컬스토리지에 저장
-      const saveData = {
-        ...data,
-        _lastSaved: Date.now(),
-        _templateKey: templateKey
-      }
-      localStorage.setItem(storageKey, JSON.stringify(saveData))
-      setLastSaved(new Date())
-      
-      // Analytics tracking
-      const completedFields = Object.values(data).filter(v => typeof v === 'string' && v.trim() !== '').length
-      analytics.trackFormAutoSaved(templateKey, completedFields, 10)
-      
-    } catch (error) {
-      console.error('Auto-save failed:', error)
-    } finally {
-      setIsAutoSaving(false)
-    }
-  }, [storageKey, templateKey])
-
-  // 디바운싱된 자동저장
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (Object.values(formData).some(value => value.trim() !== '')) {
-        autoSave(formData)
-      }
-    }, 2000) // 2초 디바운싱
-
-    return () => clearTimeout(timer)
-  }, [formData, autoSave])
-
-  // 폼 데이터 변경 핸들러
-  const handleFieldChange = (field: FieldKey, value: string) => {
+  // Field change handler
+  const handleFieldChange = (field: keyof QnaInput, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     
-    // 실시간 에러 클리어
+    // Clear field error
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
-
-    // Analytics tracking
-    analytics.trackFormFieldChanged(field, value, templateKey)
   }
 
-  // 폼 검증
+  // Form validation
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<FieldKey, string>> = {}
-    
-    Object.entries(QnaSchemaDefinition).forEach(([field, config]) => {
-      const fieldKey = field as FieldKey
-      const value = formData[fieldKey]?.trim() || ''
-      
-      if (config.required && !value) {
-        const errorMessage = getValidationMessage('required', { field: getFieldLabel(fieldKey) })
-        newErrors[fieldKey] = errorMessage
-        analytics.trackValidationError(field, 'required', errorMessage, templateKey)
-      } else if (value && value.length < config.min) {
-        const errorMessage = getValidationMessage('minLength', { min: config.min })
-        newErrors[fieldKey] = errorMessage
-        analytics.trackValidationError(field, 'minLength', errorMessage, templateKey)
-      } else if (value && value.length > config.max) {
-        const errorMessage = getValidationMessage('maxLength', { max: config.max })
-        newErrors[fieldKey] = errorMessage
-        analytics.trackValidationError(field, 'maxLength', errorMessage, templateKey)
+    const newErrors: Partial<Record<keyof QnaInput, string>> = {}
+    let isValid = true
+
+    // Required fields validation
+    const requiredFields: (keyof QnaInput)[] = [
+      'companyName', 'problem', 'solution', 'targetCustomer', 'competition',
+      'bizModel', 'fundingNeed', 'financeSnapshot', 'roadmap', 'team'
+    ]
+
+    requiredFields.forEach(field => {
+      const value = formData[field].trim()
+      if (!value) {
+        newErrors[field] = '이 항목은 꼭 필요해요. 한 줄만 적어도 괜찮아요.'
+        isValid = false
+      } else if (value.length < 2) {
+        newErrors[field] = '조금만 더 알려 주세요. (한두 문장 추가)'
+        isValid = false
+      } else if (value.length > 1000) {
+        newErrors[field] = '핵심만 남겨 볼까요? 3~4문장 정도면 충분해요.'
+        isValid = false
       }
     })
-    
+
     setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    return isValid
   }
 
-  // 필드 설정 가져오기
-  const getFieldConfig = (field: FieldKey) => {
-    const templateConfig = FIELD_CONFIGS[templateKey]
-    const fieldConfig = templateConfig?.[field]
-    const schemaConfig = QnaSchemaDefinition[field]
-    
-    return {
-      label: fieldConfig?.label || DEFAULT_LABELS[field],
-      placeholder: fieldConfig?.placeholder || `${DEFAULT_LABELS[field]}을(를) 입력해주세요...`,
-      hint: fieldConfig?.hint,
-      maxLength: schemaConfig.max,
-      required: schemaConfig.required
-    }
-  }
-
-  // 폼 제출
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+  // Form submission
+  const handleSubmit = async () => {
     if (!validateForm()) {
       return
     }
-    
-    setIsSubmitting(true)
-    
-    try {
-      // 최종 저장
-      await autoSave(formData)
 
-      // Analytics tracking
-      const completedFields = Object.values(formData).filter(v => typeof v === 'string' && v.trim() !== '').length
-      analytics.trackFormSubmitted(templateKey, completedFields, 10, formStartTime.current)
+    setIsSubmitting(true)
+    try {
+      // Store final form data
+      localStorage.setItem(`${storageKey}_final`, JSON.stringify(formData))
       
-      // 생성 페이지로 이동
+      // Navigate to result page (when implemented)
       router.push(`/generate/result?template=${templateKey}`)
       
     } catch (error) {
-      console.error('Form submission failed:', error)
+      console.error('Submit failed:', error)
       alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // 이전 단계로 이동
-  const handleBack = () => {
-    router.push('/generate/template')
-  }
-
-  // 폼 초기화
-  const handleReset = () => {
-    if (confirm('작성중인 내용을 모두 삭제하시겠습니까?')) {
-      setFormData(initialFormData)
-      setErrors({})
-      localStorage.removeItem(storageKey)
-      setLastSaved(null)
+  // Get field configuration for current template
+  const getFieldConfig = (field: keyof QnaInput) => {
+    return templateMessages.qna[field] || {
+      label: field,
+      why: '',
+      how: '',
+      example: '',
+      placeholder: ''
     }
   }
 
+  const fieldKeys: (keyof QnaInput)[] = [
+    'companyName', 'problem', 'solution', 'targetCustomer', 'competition',
+    'bizModel', 'fundingNeed', 'financeSnapshot', 'roadmap', 'team'
+  ]
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* 자동저장 상태 표시 */}
-      <div className="flex items-center justify-between">
-        <AutosaveBadge isAutoSaving={isAutoSaving} lastSaved={lastSaved} />
-        <button
-          type="button"
-          onClick={handleReset}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          초기화
-        </button>
+    <div className="space-y-6">
+      {/* Progress Header */}
+      <div className="bg-gray-50 -m-6 mb-0 p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">진행률</span>
+            <span className="text-sm font-medium text-gray-900">{filled}/{total}</span>
+            <AutosaveBadge saved={saved} />
+          </div>
+          <div className="text-sm text-gray-500">
+            약 {Math.ceil((total - filled) * 0.5)} 분 남음
+          </div>
+        </div>
+        
+        <ProgressBar value={ratio} className="mb-2" />
+        
+        {encourageMessage && (
+          <p className="text-sm text-blue-600 font-medium">
+            {encourageMessage}
+          </p>
+        )}
       </div>
 
-      {/* 질문 필드들 */}
-      <div className="grid gap-6">
-        {Object.keys(initialFormData).map((field) => {
-          const fieldKey = field as FieldKey
-          const config = getFieldConfig(fieldKey)
+      {/* Form Fields */}
+      <div className="space-y-8">
+        {fieldKeys.map((field, index) => {
+          const config = getFieldConfig(field)
+          const isRequired = true
           
           return (
-            <QnaField
-              key={fieldKey}
-              id={fieldKey}
-              label={config.label}
-              placeholder={config.placeholder}
-              hint={config.hint}
-              type={fieldKey === 'companyName' ? 'text' : 'textarea'}
-              required={config.required}
-              value={formData[fieldKey]}
-              onChange={(value) => handleFieldChange(fieldKey, value)}
-              error={errors[fieldKey]}
-              maxLength={config.maxLength}
-            />
+            <div key={field} className="space-y-2">
+              {/* Step indicator for groups of fields */}
+              {(index === 0 || index === 3 || index === 6) && (
+                <div className="flex items-center space-x-2 mb-4">
+                  <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-600 text-xs font-bold rounded-full">
+                    {Math.floor(index / 3) + 1}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {index === 0 && '이름·문제·해결'}
+                    {index === 3 && '고객·경쟁·수익'}
+                    {index === 6 && '예산·재무·계획·팀'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    (약 {index === 0 ? '2' : index === 3 ? '3' : '3'}분)
+                  </span>
+                </div>
+              )}
+              
+              <QnaField
+                id={field}
+                label={config.label}
+                placeholder={config.placeholder}
+                why={config.why}
+                how={config.how}
+                example={config.example}
+                type="textarea"
+                required={isRequired}
+                value={formData[field]}
+                onChange={(value) => handleFieldChange(field, value)}
+                error={errors[field]}
+                maxLength={1000}
+              />
+            </div>
           )
         })}
       </div>
 
-      {/* 버튼들 */}
-      <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          이전 단계
-        </button>
-        
-        <div className="flex items-center space-x-3">
-          <span className="text-sm text-gray-500">
-            {Object.values(formData).filter(v => v.trim()).length}/10 완료
-          </span>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? '생성 중...' : '사업계획서 생성'}
-          </button>
+      {/* Submit Section */}
+      <div className="border-t border-gray-200 pt-6 mt-8">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">{filled}/{total}</span> 개 항목 완료
+            {filled >= total && (
+              <span className="ml-2 text-green-600 font-medium">
+                ✅ 모든 항목이 완료되었습니다!
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => router.push('/generate/template')}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              템플릿 다시 선택
+            </button>
+            
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting || filled < total}
+              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  사업계획서 생성 중...
+                </>
+              ) : (
+                '사업계획서 생성하기'
+              )}
+            </button>
+          </div>
         </div>
+        
+        {filled < total && (
+          <p className="text-xs text-gray-500 mt-2">
+            모든 항목을 작성하시면 사업계획서를 생성할 수 있어요.
+          </p>
+        )}
       </div>
-    </form>
+    </div>
   )
 }

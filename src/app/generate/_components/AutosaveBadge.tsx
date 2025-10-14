@@ -3,59 +3,18 @@
 import { useEffect, useState } from 'react'
 
 interface AutosaveBadgeProps {
-  isAutoSaving: boolean
-  lastSaved: Date | null
+  saved: boolean
   className?: string
 }
 
 export default function AutosaveBadge({ 
-  isAutoSaving, 
-  lastSaved, 
+  saved, 
   className = '' 
 }: AutosaveBadgeProps) {
-  const [timeSinceLastSave, setTimeSinceLastSave] = useState<string>('')
-
-  // Update time since last save every minute
-  useEffect(() => {
-    if (!lastSaved) return
-
-    const updateTime = () => {
-      const now = new Date()
-      const diffInMinutes = Math.floor((now.getTime() - lastSaved.getTime()) / (1000 * 60))
-      
-      if (diffInMinutes === 0) {
-        setTimeSinceLastSave('방금 전')
-      } else if (diffInMinutes < 60) {
-        setTimeSinceLastSave(`${diffInMinutes}분 전`)
-      } else if (diffInMinutes < 1440) { // Less than 24 hours
-        const hours = Math.floor(diffInMinutes / 60)
-        setTimeSinceLastSave(`${hours}시간 전`)
-      } else {
-        setTimeSinceLastSave(lastSaved.toLocaleDateString())
-      }
-    }
-
-    updateTime()
-    const interval = setInterval(updateTime, 60000) // Update every minute
-
-    return () => clearInterval(interval)
-  }, [lastSaved])
-
-  if (isAutoSaving) {
+  if (saved) {
     return (
       <div className={`inline-flex items-center space-x-2 ${className}`}>
-        <div className="flex items-center space-x-2 text-sm text-blue-600">
-          <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-600 border-t-transparent"></div>
-          <span className="font-medium">저장 중</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (lastSaved) {
-    return (
-      <div className={`inline-flex items-center space-x-2 ${className}`}>
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
+        <div className="flex items-center space-x-2 text-sm">
           <svg 
             className="w-3 h-3 text-green-500" 
             fill="currentColor" 
@@ -68,10 +27,7 @@ export default function AutosaveBadge({
               clipRule="evenodd" 
             />
           </svg>
-          <span>
-            <span className="font-medium text-green-600">저장됨</span>
-            <span className="ml-1 text-gray-500">• {timeSinceLastSave}</span>
-          </span>
+          <span className="text-green-700 font-medium">저장 완료(3초마다 자동)</span>
         </div>
       </div>
     )
@@ -79,7 +35,7 @@ export default function AutosaveBadge({
 
   return (
     <div className={`inline-flex items-center space-x-2 ${className}`}>
-      <div className="flex items-center space-x-2 text-sm text-gray-400">
+      <div className="flex items-center space-x-2 text-sm text-gray-500">
         <svg 
           className="w-3 h-3" 
           fill="none" 
@@ -94,7 +50,7 @@ export default function AutosaveBadge({
             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
           />
         </svg>
-        <span>저장되지 않음</span>
+        <span>자동 저장 준비 중…</span>
       </div>
     </div>
   )
