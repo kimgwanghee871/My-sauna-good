@@ -55,11 +55,19 @@ export interface PricingConfig {
       cta_primary: string
       cta_secondary: string
     }
+    core_features: Array<{
+      title: string
+      description: string
+    }>
     overage: {
       title: string
       description: string
     }
     rollover: {
+      title: string
+      description: string
+    }
+    regen: {
       title: string
       description: string
     }
