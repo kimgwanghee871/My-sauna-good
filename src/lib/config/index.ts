@@ -121,11 +121,37 @@ export async function fetchPricingConfig(): Promise<PricingConfig> {
   return pricingConfig.pricing as PricingConfig
 }
 
+// QNA Form interfaces
+export interface QnaAttachmentConfig {
+  enabled: boolean
+  title: string
+  subtitle: string
+  note: string
+  recommend_badge: string
+  allowed_mimes: string[]
+  max_files: number
+  max_total_mb: number
+  cta_upload: string
+  cta_remove: string
+  extra_notes_label: string
+  extra_notes_placeholder: string
+}
+
+export interface QnaFormConfig {
+  attachments: QnaAttachmentConfig
+}
+
 // Fetch landing pricing config
 export async function fetchLandingPricingConfig(): Promise<LandingPricingConfig> {
   // In a real app, this might fetch from remote config
   // For now, use the local JSON file
   return (pricingConfig as any).landing_pricing as LandingPricingConfig
+}
+
+// Fetch QNA form config
+export async function fetchQnaConfig(): Promise<QnaFormConfig> {
+  const qnaConfig = await import('./qna.json')
+  return qnaConfig.qna_form as QnaFormConfig
 }
 
 // Get enabled plans only (filters out disabled plans)

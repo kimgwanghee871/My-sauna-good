@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation'
 import QnaField from '../_components/QnaField'
 import AutosaveBadge from '../_components/AutosaveBadge'
 import ProgressBar from '../_components/ProgressBar'
+import AttachmentSection from '../../../components/qna/AttachmentSection'
+import ExtraNotes from '../../../components/qna/ExtraNotes'
 import { useProgress } from './useProgress'
 import { useAutosave } from './useAutosave'
 import { getTemplateMessages } from '../../../lib/i18n'
-import { type QnaInput } from '../../../lib/schemas/qset.schema'
+import { type QnaInput, type AttachmentFile } from '../../../lib/schemas/qset.schema'
+import { fetchQnaConfig, type QnaFormConfig } from '../../../lib/config'
 import type { TemplateKey } from '../../../lib/schemas/template.schema'
 
 // 기본 폼 데이터
@@ -22,7 +25,9 @@ const initialFormData: QnaInput = {
   fundingNeed: '',
   financeSnapshot: '',
   roadmap: '',
-  team: ''
+  team: '',
+  attachments: [],
+  extraNotes: ''
 }
 
 export default function QuestionsForm({ templateKey }: { templateKey: TemplateKey }) {
@@ -32,6 +37,7 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
   const [formData, setFormData] = useState<QnaInput>(initialFormData)
   const [errors, setErrors] = useState<Partial<Record<keyof QnaInput, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [qnaConfig, setQnaConfig] = useState<QnaFormConfig | null>(null)
 
   // Get template-specific messages
   const templateMessages = getTemplateMessages(templateKey)
@@ -41,17 +47,28 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
   const { saved } = useAutosave(storageKey, formData)
   const { filled, total, ratio, encourageMessage } = useProgress(formData)
 
-  // Load saved data on mount
+  // Load QNA config and saved data on mount
   useEffect(() => {
-    const saved = localStorage.getItem(storageKey)
-    if (saved) {
+    const initializeForm = async () => {
       try {
-        const parsedData = JSON.parse(saved)
-        setFormData({ ...initialFormData, ...parsedData })
+        const config = await fetchQnaConfig()
+        setQnaConfig(config)
       } catch (error) {
-        console.warn('Failed to parse saved form data:', error)
+        console.warn('Failed to load QNA config:', error)
+      }
+
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        try {
+          const parsedData = JSON.parse(saved)
+          setFormData({ ...initialFormData, ...parsedData })
+        } catch (error) {
+          console.warn('Failed to parse saved form data:', error)
+        }
       }
     }
+
+    initializeForm()
   }, [storageKey])
 
   // Field change handler
@@ -62,6 +79,16 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
+  }
+
+  // Attachments change handler
+  const handleAttachmentsChange = (attachments: AttachmentFile[]) => {
+    setFormData(prev => ({ ...prev, attachments }))
+  }
+
+  // Extra notes change handler
+  const handleExtraNotesChange = (notes: string) => {
+    setFormData(prev => ({ ...prev, extraNotes: notes }))
   }
 
   // Form validation
@@ -101,8 +128,15 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
 
     setIsSubmitting(true)
     try {
+      // Include attachment and extra notes in final data
+      const finalData = {
+        ...formData,
+        attachments: formData.attachments || [],
+        extraNotes: formData.extraNotes || ''
+      }
+
       // Store final form data
-      localStorage.setItem(`${storageKey}_final`, JSON.stringify(formData))
+      localStorage.setItem(`${storageKey}_final`, JSON.stringify(finalData))
       
       // Navigate to result page (when implemented)
       router.push(`/generate/result?template=${templateKey}`)
@@ -198,6 +232,34 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
           )
         })}
       </div>
+
+      {/* Attachment and Extra Notes Sections */}
+      {qnaConfig && qnaConfig.attachments.enabled && (
+        <div className="space-y-6 border-t border-gray-200 pt-8">
+          <div className="flex items-center space-x-2 mb-6">
+            <span className="inline-flex items-center justify-center w-6 h-6 bg-purple-100 text-purple-600 text-xs font-bold rounded-full">
+              +
+            </span>
+            <span className="text-sm font-medium text-gray-700">
+              정확성 향상을 위한 추가 정보
+            </span>
+            <span className="text-xs text-gray-500">(선택사항)</span>
+          </div>
+
+          {/* Attachment Section */}
+          <AttachmentSection
+            rc={qnaConfig.attachments}
+            onChange={handleAttachmentsChange}
+          />
+
+          {/* Extra Notes Section */}
+          <ExtraNotes
+            rc={qnaConfig.attachments}
+            onChange={handleExtraNotesChange}
+            initialValue={formData.extraNotes || ''}
+          />
+        </div>
+      )}
 
       {/* Submit Section */}
       <div className="border-t border-gray-200 pt-6 mt-8">
