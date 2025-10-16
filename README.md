@@ -23,3 +23,4 @@ npm run dev
 - TypeScript
 - Tailwind CSS
 - Turbopack# Deployment trigger Thu Oct 16 10:09:42 UTC 2025
+# Preview deployment trigger Thu Oct 16 12:15:06 UTC 2025
