@@ -154,7 +154,18 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
 
   // Get field configuration for current template
   const getFieldConfig = (field: keyof QnaInput) => {
-    return templateMessages.qna[field] || {
+    // Skip template config for attachment fields (they don't need QnaField config)
+    if (field === 'attachments' || field === 'extraNotes') {
+      return {
+        label: field,
+        why: '',
+        how: '',
+        example: '',
+        placeholder: ''
+      }
+    }
+    
+    return templateMessages.qna[field as keyof typeof templateMessages.qna] || {
       label: field,
       why: '',
       how: '',
