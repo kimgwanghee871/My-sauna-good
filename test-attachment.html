@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 첨부 기능 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">PDF 첨부 기능 테스트</h1>
+        
+        <!-- 파일 업로드 테스트 -->
+        <section class="border rounded-xl p-6 bg-gradient-to-br from-blue-50/30 to-indigo-50/20 border-blue-100 mb-6">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <h3 class="text-sm font-medium text-gray-900">첨부파일 (선택)</h3>
+                        <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">권장</span>
+                    </div>
+                    <p class="text-sm text-gray-600">정확성 향상을 위해 기업 소개서·재무자료 등의 PDF/DOCX 첨부를 권장함.</p>
+                </div>
+            </div>
+            
+            <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p class="text-xs text-amber-800">
+                    <span class="font-medium">📋 참고:</span> PDF/DOCX 최대 2개, 총 30MB. 민감정보는 가급적 포함하지 말 것.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <label class="flex items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+                    <div class="text-center">
+                        <span class="text-sm text-gray-600">📎 파일 선택</span>
+                        <span class="block text-xs text-gray-400 mt-1">PDF, DOCX (최대 30MB)</span>
+                    </div>
+                    <input type="file" class="hidden" accept=".pdf,.docx" onchange="handleFileTest(this)">
+                </label>
+                
+                <div id="file-list" class="hidden">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">첨부된 파일</h4>
+                    <div id="files" class="space-y-2"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 추가 설명 테스트 -->
+        <section class="border rounded-xl p-6 bg-gradient-to-br from-green-50/30 to-emerald-50/20 border-green-100">
+            <div class="mb-4">
+                <h3 class="text-sm font-medium text-gray-900 mb-2">추가 설명 (선택)</h3>
+                <p class="text-sm text-gray-600">AI가 참고할 수 있는 추가 맥락이나 강조하고 싶은 포인트를 자유롭게 작성해 주세요.</p>
+            </div>
+
+            <div class="space-y-2">
+                <textarea 
+                    id="extra-notes"
+                    placeholder="AI가 참고하면 좋은 추가 맥락·강조 포인트를 적어주세요 (최대 1,000자)."
+                    class="w-full min-h-[120px] p-4 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors resize-y"
+                    maxlength="1000"
+                    oninput="updateCharCount(this)"
+                ></textarea>
+                
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-gray-500">💡 예시: "특히 환경 친화적인 측면을 강조해 주세요", "B2B 고객 중심으로 분석 부탁드립니다"</span>
+                    <span id="char-count" class="font-medium text-gray-500">0 / 1,000자</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h3 class="font-medium text-blue-900 mb-2">테스트 결과</h3>
+            <div id="test-result" class="text-sm text-blue-700">파일을 선택하거나 텍스트를 입력해보세요.</div>
+        </div>
+    </div>
+
+    <script>
+        function handleFileTest(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const fileList = document.getElementById('file-list');
+            const files = document.getElementById('files');
+            const result = document.getElementById('test-result');
+            
+            // 파일 검증
+            const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            const maxSize = 30 * 1024 * 1024; // 30MB
+            
+            if (!allowedTypes.includes(file.type)) {
+                result.innerHTML = '❌ 오류: PDF/DOCX 형식만 허용됩니다.';
+                result.className = 'text-sm text-red-700';
+                return;
+            }
+            
+            if (file.size > maxSize) {
+                result.innerHTML = '❌ 오류: 파일 크기는 30MB 이하여야 합니다.';
+                result.className = 'text-sm text-red-700';
+                return;
+            }
+            
+            // 성공
+            fileList.classList.remove('hidden');
+            files.innerHTML = `
+                <div class="flex items-center justify-between p-3 bg-white border rounded-lg">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <span class="text-lg">${file.type === 'application/pdf' ? '📄' : '📝'}</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">${file.name}</p>
+                            <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)}MB</p>
+                        </div>
+                    </div>
+                    <button onclick="removeFile()" class="text-red-600 hover:text-red-700 text-xs font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors">삭제</button>
+                </div>
+            `;
+            
+            result.innerHTML = '✅ 성공: 파일이 올바르게 선택되었습니다! (실제로는 Supabase에 업로드됩니다)';
+            result.className = 'text-sm text-green-700';
+        }
+        
+        function removeFile() {
+            const fileList = document.getElementById('file-list');
+            const result = document.getElementById('test-result');
+            
+            fileList.classList.add('hidden');
+            result.innerHTML = '파일이 제거되었습니다.';
+            result.className = 'text-sm text-blue-700';
+        }
+        
+        function updateCharCount(textarea) {
+            const charCount = document.getElementById('char-count');
+            const count = textarea.value.length;
+            
+            charCount.textContent = `${count.toLocaleString()} / 1,000자`;
+            charCount.className = `font-medium ${count > 900 ? 'text-orange-600' : 'text-gray-500'}`;
+            
+            const result = document.getElementById('test-result');
+            if (count > 0) {
+                result.innerHTML = `✅ 추가 설명: ${count}자 입력됨`;
+                result.className = 'text-sm text-green-700';
+            }
+        }
+    </script>
+</body>
+</html>
