@@ -25,11 +25,16 @@ export default function AttachmentSection({ rc, onChange }: AttachmentSectionPro
   const [files, setFiles] = useState<AttachmentFile[]>([])
   const [busy, setBusy] = useState(false)
 
-  // Supabase client 초기화
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  // Supabase client 초기화 (환경변수 체크)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase environment variables not found')
+    return <div className="p-4 text-red-600">Supabase 설정이 필요합니다.</div>
+  }
+  
+  const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]

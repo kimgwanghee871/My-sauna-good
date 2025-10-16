@@ -5,8 +5,18 @@ import { useRouter } from 'next/navigation'
 import QnaField from '../_components/QnaField'
 import AutosaveBadge from '../_components/AutosaveBadge'
 import ProgressBar from '../_components/ProgressBar'
-import AttachmentSection from '../../../components/qna/AttachmentSection'
-import ExtraNotes from '../../../components/qna/ExtraNotes'
+// Import components dynamically to prevent SSR issues
+import dynamic from 'next/dynamic'
+
+const AttachmentSection = dynamic(() => import('../../../components/qna/AttachmentSection'), { 
+  ssr: false,
+  loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-xl"></div>
+})
+
+const ExtraNotes = dynamic(() => import('../../../components/qna/ExtraNotes'), {
+  ssr: false,
+  loading: () => <div className="h-24 bg-gray-100 animate-pulse rounded-xl"></div>
+})
 import { useProgress } from './useProgress'
 import { useAutosave } from './useAutosave'
 import { getTemplateMessages } from '../../../lib/i18n'
