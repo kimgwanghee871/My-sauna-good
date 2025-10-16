@@ -10,7 +10,7 @@ import ExtraNotes from '../../../components/qna/ExtraNotes'
 import { useProgress } from './useProgress'
 import { useAutosave } from './useAutosave'
 import { getTemplateMessages } from '../../../lib/i18n'
-import { type QnaInput, type AttachmentFile } from '../../../lib/schemas/qset.schema'
+import { type QnaInput, type AttachmentFile, type CoreFieldKeys, isCoreField } from '../../../lib/schemas/qset.schema'
 import { fetchQnaConfig, type QnaFormConfig } from '../../../lib/config'
 import type { TemplateKey } from '../../../lib/schemas/template.schema'
 
@@ -154,9 +154,9 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
 
   // Get field configuration for current template
   const getFieldConfig = (field: keyof QnaInput) => {
-    // Skip template config for attachment fields (they don't need QnaField config)
-    if (field === 'attachments' || field === 'extraNotes') {
-      return {
+    if (isCoreField(field)) {
+      // ✅ Safe access to template messages for core fields only
+      return templateMessages.qna[field] || {
         label: field,
         why: '',
         how: '',
@@ -164,9 +164,31 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
         placeholder: ''
       }
     }
-    
-    return templateMessages.qna[field as keyof typeof templateMessages.qna] || {
-      label: field,
+
+    // ✅ Handle optional fields with default configs
+    if (field === 'attachments') {
+      return {
+        label: '첨부파일 (선택)',
+        why: '정확성 향상을 위해 기업 소개서·재무자료 등의 첨부를 권장함.',
+        how: 'PDF/DOCX 최대 2개, 총 30MB 권장.',
+        example: '회사소개서.pdf, IR자료.pdf',
+        placeholder: ''
+      }
+    }
+
+    if (field === 'extraNotes') {
+      return {
+        label: '추가 설명 (선택)',
+        why: 'AI가 참고할 맥락/강조 포인트를 제공하여 생성 정확성을 높임.',
+        how: '핵심 문장 2~3줄로 요약 입력.',
+        example: '규제 대응/ESG 연계를 강조할 것.',
+        placeholder: 'AI가 참고하면 좋은 추가 맥락을 입력'
+      }
+    }
+
+    // Fallback for any other fields
+    return {
+      label: String(field),
       why: '',
       how: '',
       example: '',
@@ -174,7 +196,7 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
     }
   }
 
-  const fieldKeys: (keyof QnaInput)[] = [
+  const fieldKeys: CoreFieldKeys[] = [
     'companyName', 'problem', 'solution', 'targetCustomer', 'competition',
     'bizModel', 'fundingNeed', 'financeSnapshot', 'roadmap', 'team'
   ]

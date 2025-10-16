@@ -34,18 +34,31 @@ export const QnaSchemaDefinition = {
   team: { min: 3, max: 500, required: true }
 };
 
-// Types for field configurations
+// Core field keys that exist in template messages (기존 10개 필드)
+export type CoreFieldKeys = 
+  | 'companyName' | 'problem' | 'solution' | 'targetCustomer' | 'competition'
+  | 'bizModel' | 'fundingNeed' | 'financeSnapshot' | 'roadmap' | 'team';
+
+// Types for field configurations  
 type FieldKey = keyof QnaInput;
 type TemplateKey = 'government' | 'investment' | 'loan';
 
-interface FieldConfig {
+export interface FieldConfig {
   label: string;
   placeholder: string;
   hint: string;
 }
 
-// Template-specific field configurations
-export const FIELD_CONFIGS: Record<TemplateKey, Partial<Record<FieldKey, FieldConfig>>> = {
+// Type guard: 주어진 key가 CoreFieldKeys인지 판정
+export function isCoreField(key: keyof QnaInput): key is CoreFieldKeys {
+  return [
+    'companyName', 'problem', 'solution', 'targetCustomer', 'competition',
+    'bizModel', 'fundingNeed', 'financeSnapshot', 'roadmap', 'team'
+  ].includes(key as string);
+}
+
+// Template-specific field configurations (core fields only)
+export const FIELD_CONFIGS: Record<TemplateKey, Partial<Record<CoreFieldKeys, FieldConfig>>> = {
   government: {
     problem: {
       label: '정책과제와의 부합 문제 정의',
