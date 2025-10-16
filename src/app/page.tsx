@@ -6,6 +6,9 @@ import { TemplatesSection } from '@/components/sections/TemplatesSection'
 import { PricingSection } from '@/components/sections/PricingSection'
 import { TestimonialsSection } from '@/components/sections/TestimonialsSection'
 
+// Force dynamic rendering for Preview environment safety
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   return (
     <div className="min-h-screen">
