@@ -103,8 +103,9 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
     ]
 
     requiredFields.forEach(field => {
-      const raw = formData[field]
-      const value = typeof raw === 'string' ? raw.trim() : ''
+      // Safely handle potentially undefined formData values
+      const fieldValue = formData[field] || ''
+      const value = fieldValue.toString().trim()
       
       if (!value) {
         newErrors[field] = '이 항목은 꼭 필요해요. 한 줄만 적어도 괜찮아요.'
