@@ -1,3 +1,10 @@
+export interface AttachmentFile {
+  name: string;
+  size: number;
+  mime: string;
+  url: string;
+}
+
 export interface QnaInput {
   companyName: string;      // 회사/프로젝트명
   problem: string;          // 해결하려는 문제
@@ -9,6 +16,8 @@ export interface QnaInput {
   financeSnapshot: string;  // 재무 현황 요약
   roadmap: string;          // 추진 계획
   team: string;             // 팀 구성
+  attachments?: AttachmentFile[];  // 첨부파일 (선택)
+  extraNotes?: string;             // 추가 설명 (선택)
 }
 
 // Schema definition for validation

@@ -1,0 +1,18 @@
+{
+  "qna_form": {
+    "attachments": {
+      "enabled": true,
+      "title": "첨부파일 (선택)",
+      "subtitle": "정확성 향상을 위해 기업 소개서·재무자료 등의 PDF/DOCX 첨부를 권장함.",
+      "note": "PDF/DOCX 최대 2개, 총 30MB. 민감정보는 가급적 포함하지 말 것.",
+      "recommend_badge": "권장",
+      "allowed_mimes": ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+      "max_files": 2,
+      "max_total_mb": 30,
+      "cta_upload": "파일 선택",
+      "cta_remove": "삭제",
+      "extra_notes_label": "추가 설명 (선택)",
+      "extra_notes_placeholder": "AI가 참고하면 좋은 추가 맥락·강조 포인트를 적어주세요 (최대 1,000자)."
+    }
+  }
+}
