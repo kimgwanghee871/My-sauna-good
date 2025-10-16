@@ -22,4 +22,4 @@ npm run dev
 - React 19 RC
 - TypeScript
 - Tailwind CSS
-- Turbopack
+- Turbopack# Deployment trigger Thu Oct 16 10:09:42 UTC 2025
