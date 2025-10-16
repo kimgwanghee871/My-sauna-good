@@ -31,7 +31,12 @@ export default function AttachmentSection({ rc, onChange }: AttachmentSectionPro
   
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Supabase environment variables not found')
-    return <div className="p-4 text-red-600">Supabase 설정이 필요합니다.</div>
+    return (
+      <div className="p-4 text-red-600 border border-red-200 rounded-lg bg-red-50">
+        <p className="text-sm font-medium">{rc.title || '첨부파일'}</p>
+        <p className="text-xs mt-1">서비스 설정을 확인해주세요.</p>
+      </div>
+    )
   }
   
   const supabase = createClient(supabaseUrl, supabaseAnonKey)

@@ -12,7 +12,10 @@
       "cta_upload": "파일 선택",
       "cta_remove": "삭제",
       "extra_notes_label": "추가 설명 (선택)",
-      "extra_notes_placeholder": "AI가 참고하면 좋은 추가 맥락·강조 포인트를 적어주세요 (최대 1,000자)."
+      "extra_notes_placeholder": "AI가 참고하면 좋은 추가 맥락·강조 포인트를 적어주세요 (최대 1,000자).",
+      "error_config": "서비스 설정을 확인해주세요.",
+      "error_network": "네트워크 연결을 확인해주세요.",
+      "loading_text": "로딩 중..."
     }
   }
 }
