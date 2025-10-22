@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '../../auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth/config'
 import { QnaInput } from '@/lib/schemas/qset.schema'
 import { TemplateKey } from '@/lib/schemas/template.schema'
 
