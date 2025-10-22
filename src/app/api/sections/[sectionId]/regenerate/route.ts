@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
+// ⚡ CRITICAL: Force Node.js runtime for Supabase operations  
+export const runtime = 'nodejs'
+
 // POST /api/sections/[sectionId]/regenerate - 섹션 재생성
 export async function POST(
   _req: Request, 

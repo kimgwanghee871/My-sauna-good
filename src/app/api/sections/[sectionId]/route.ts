@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
+// ⚡ CRITICAL: Force Node.js runtime for Supabase operations
+export const runtime = 'nodejs'
+
 // PUT /api/sections/[sectionId] - 섹션 편집
 export async function PUT(
   _req: Request, 

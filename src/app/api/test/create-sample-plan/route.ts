@@ -3,11 +3,16 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/options'
 import { supabaseServer } from '@/lib/supabase-server'
 
+// ⚡ CRITICAL: Force Node.js runtime for Supabase operations
+export const runtime = 'nodejs'
+
 // GET/POST /api/test/create-sample-plan - 테스트용 샘플 계획서 생성
 export async function GET(request: NextRequest) {
   return await createSamplePlan(request)
 }
 
+// POST /api/test/create-sample-plan - 테스트용 샘플 계획서 생성
+>>>>>>> 62f3e08 (fix: Add runtime env debugging and Node.js runtime enforcement)
 export async function POST(request: NextRequest) {
   return await createSamplePlan(request)
 }

@@ -13,11 +13,16 @@ export const supabaseRoute = (c: ReturnType<typeof cookies>) =>
 
 // Admin client for server-side operations that bypass RLS
 export const admin = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   
+  // 🔍 DETAILED ERROR: Show which env vars are missing
   if (!url || !key) {
-    throw new Error('Missing Supabase credentials for admin client')
+    const missing = []
+    if (!url) missing.push('NEXT_PUBLIC_SUPABASE_URL')
+    if (!key) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+    
+    throw new Error(`Missing Supabase credentials for admin client: ${missing.join(', ')} | url=${!!url} | service_role=${!!key} | runtime=${typeof process !== 'undefined' ? 'server' : 'client'}`)
   }
   
   return createClient(url, key, {
