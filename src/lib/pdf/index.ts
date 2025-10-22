@@ -1,8 +1,8 @@
-// PDF 처리 시스템 진입점
-export { 
-  extractPdfSummary, 
-  createDocumentContext, 
+// src/lib/pdf/index.ts
+export {
+  extractPdfSummary,
+  createDocumentContext,
   formatDocumentContextForPrompt,
-  type PdfSummary,
-  type DocumentContext 
 } from './extractor'
+
+export type { PdfSummary, AttachmentFile, DocumentContext } from './extractor'
