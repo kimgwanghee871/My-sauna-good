@@ -36,7 +36,7 @@ export async function POST(
         plan_id, 
         section_index, 
         heading,
-        business_plans!inner(user_id, template_key, form_data)
+        plans!inner(user_id, template_key, form_data)
       `)
       .eq('id', sectionId)
       .single()
@@ -49,7 +49,7 @@ export async function POST(
     }
 
     // 소유권 검증
-    const planOwner = (section as any).business_plans?.user_id
+    const planOwner = (section as any).plans?.user_id
     if (planOwner !== session.user.email) {
       return NextResponse.json(
         { success: false, message: '권한이 없습니다' },

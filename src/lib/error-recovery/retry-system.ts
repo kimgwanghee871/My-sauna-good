@@ -386,7 +386,7 @@ export class RetryOrchestrator {
       
       // 플랜 상태도 실패로 변경
       await supabase
-        .from('business_plans')
+        .from('plans')
         .update({ 
           status: 'failed',
           updated_at: new Date().toISOString()
@@ -565,7 +565,7 @@ export class ErrorRecoveryManager {
 
       // 플랜 상태를 processing으로 변경하고 재시도
       await supabase
-        .from('business_plans')
+        .from('plans')
         .update({ 
           status: 'processing',
           updated_at: new Date().toISOString()
@@ -605,7 +605,7 @@ export class ErrorRecoveryManager {
 
     try {
       // Supabase 상태 확인
-      const { error } = await supabase.from('business_plans').select('count').limit(1)
+      const { error } = await supabase.from('plans').select('count').limit(1)
       health.supabaseStatus = !error
     } catch (error) {
       console.warn('Supabase 연결 실패:', error)

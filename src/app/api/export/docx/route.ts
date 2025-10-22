@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const supabase = supabaseServer()
     
     const { data: plan, error: planError } = await supabase
-      .from('business_plans')
+      .from('plans')
       .select('id, user_id, title, template_key, created_at')
       .eq('id', planId)
       .single()

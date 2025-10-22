@@ -199,7 +199,7 @@ export class AIOrchestrator {
     await this.logStep('initialization', 0, 'gpt-4o-mini', 'pending', '계획 초기화 중')
     
     await supabase
-      .from('business_plans')
+      .from('plans')
       .update({ 
         status: 'processing',
         answers: this.answers,
@@ -223,7 +223,7 @@ export class AIOrchestrator {
     
     // DB에 요약 저장
     await supabase
-      .from('business_plans')
+      .from('plans')
       .update({ uploads_summary: formattedContext })
       .eq('id', this.planId)
     
@@ -336,7 +336,7 @@ export class AIOrchestrator {
     
     // 개선된 콘텐츠를 섹션별로 분할하여 저장 (간소화)
     await supabase
-      .from('business_plans')
+      .from('plans')
       .update({ final_content: refinedContent })
       .eq('id', this.planId)
     
@@ -410,7 +410,7 @@ export class AIOrchestrator {
     }
 
     await supabase
-      .from('business_plans')
+      .from('plans')
       .update({ quality_score: qualityScore })
       .eq('id', this.planId)
   }
@@ -420,7 +420,7 @@ export class AIOrchestrator {
     await this.generateVisualizations()
     
     await supabase
-      .from('business_plans')
+      .from('plans')
       .update({ 
         status: 'completed',
         total_api_calls: this.totalApiCalls,
@@ -489,7 +489,7 @@ export class AIOrchestrator {
 
   private async handleError(error: any): Promise<void> {
     await supabase
-      .from('business_plans')
+      .from('plans')
       .update({ 
         status: 'failed',
         total_api_calls: this.totalApiCalls

@@ -2,7 +2,7 @@
 export interface Database {
   public: {
     Tables: {
-      business_plans: {
+      plans: {
         Row: {
           id: string
           user_id: string
