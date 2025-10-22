@@ -8,41 +8,35 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  session: { strategy: 'jwt' },
   callbacks: {
     async jwt({ token, account }) {
+      // OAuth 로그인 직후 token.sub가 유저 고유 ID
       if (account?.provider && token.sub) {
         token.uid = token.sub
-        token.accessToken = account.access_token
+      }
+      // 액세스토큰 부가 저장(선택)
+      if ((account as any)?.access_token) {
+        token.accessToken = (account as any).access_token
       }
       return token
     },
     async session({ session, token }) {
       if (session.user && token.uid) {
+        // ✅ 올바른 문자열 변환
         (session.user as any).id = String(token.uid)
+      }
+      // 액세스토큰 전달(선택)
+      if (token.accessToken) {
         (session as any).accessToken = token.accessToken
       }
       return session
-    },
-    async redirect({ url, baseUrl }) {
-      // 🔍 DEBUG: Log redirect attempts
-      console.log('🔍 [NextAuth] Redirect callback:', { url, baseUrl })
-      
-      // Allow same origin redirects
-      if (url.startsWith('/')) return `${baseUrl}${url}`
-      // Allow callback URLs on same origin
-      else if (new URL(url).origin === baseUrl) return url
-      
-      return baseUrl
     },
   },
   pages: { 
     signIn: '/login', 
     error: '/auth/error' 
   },
-  session: { 
-    strategy: 'jwt' 
-  },
   secret: process.env.NEXTAUTH_SECRET,
-  // Enable debug logging
   debug: process.env.NODE_ENV !== 'production',
 }
