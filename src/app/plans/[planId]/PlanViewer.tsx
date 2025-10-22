@@ -24,6 +24,12 @@ interface ChartSpec {
   meta?: any
 }
 
+type MarketSpecRow = {
+  json_spec: {
+    charts?: any[]
+  } | null
+}
+
 
 
 interface PlanData {
@@ -80,15 +86,21 @@ export default function PlanViewer({ planId, templateKey, initialPlan }: PlanVie
 
         setSections(sectionsData || [])
 
-        // Load charts if available - ✅ 정타입 클라이언트, 제네릭 제거
-        const { data: ms, error: chartError } = await sb
+        // Load charts if available - ✅ 명시 타입 + 널가드 적용
+        const {
+          data: ms,
+          error: chartError,
+        }: {
+          data: MarketSpecRow | null
+          error: any
+        } = await sb
           .from('market_specs')
           .select('json_spec')
           .eq('plan_id', planId)
           .maybeSingle()
 
         if (!chartError) {
-          const rawCharts = (ms?.json_spec as any)?.charts ?? []
+          const rawCharts = ms?.json_spec?.charts ?? []
           setCharts(Array.isArray(rawCharts) ? rawCharts.map(normalizeChart) : [])
         }
 
