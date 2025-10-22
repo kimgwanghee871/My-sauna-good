@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth/options'
 import { admin } from '@/lib/supabase-server'
 import { notFound, redirect } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function PlanPage({ params }: { params: Promise<{ planId: string }> }) {
   const { planId } = await params
   
@@ -20,23 +23,20 @@ export default async function PlanPage({ params }: { params: Promise<{ planId: s
   })
   
   try {
-    const supabase = admin()
-    
-    // 사업계획서 조회
-    const { data: plan, error } = await supabase
+    const { data: plan, error } = await admin()
       .from('business_plans')
-      .select('*')
+      .select('id,user_id,template_key,title,status,created_at,quality_score')
       .eq('id', planId)
-      .single()
-    
-    if (error || !plan) {
-      console.warn('⚠️ [PlanPage] Plan not found:', { planId, error: error?.message })
-      return notFound()
-    }
-    
-    // 소유권 확인
-    if (plan.user_id !== session.user.email) {
-      console.warn('⚠️ [PlanPage] Access denied:', { planId, owner: plan.user_id, user: session.user.email })
+      .maybeSingle()
+
+    console.log('[plans] planId=', planId, 'email=', session.user.email, 'dbError=', error, 'plan=', plan)
+
+    if (!plan) return notFound()
+
+    const uid = (session.user as any)?.id
+    const ownerOk = plan.user_id === session.user.email || (uid && plan.user_id === uid)
+    if (!ownerOk) {
+      console.warn('[plans] owner mismatch', { plan_user_id: plan.user_id, email: session.user.email, uid })
       return notFound()
     }
     
