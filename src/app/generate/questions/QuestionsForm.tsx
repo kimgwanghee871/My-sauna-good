@@ -151,11 +151,7 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
       // Store final form data for backup
       localStorage.setItem(`${storageKey}_final`, JSON.stringify(finalData))
       
-<<<<<<< HEAD
-      // 🚀 실제 AI 생성 API 호출
-=======
       // Call API to start generation
->>>>>>> a3316fe1cfda8166faa5a4f61727027a4ab915fc
       const response = await fetch('/api/generate/start', {
         method: 'POST',
         headers: {
@@ -163,27 +159,19 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
         },
         body: JSON.stringify({
           templateKey,
-<<<<<<< HEAD
-          answers: finalData,
-          attachments: finalData.attachments,
-          extraNotes: finalData.extraNotes
-        }),
-=======
           formData: finalData
         })
->>>>>>> a3316fe1cfda8166faa5a4f61727027a4ab915fc
       })
 
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-<<<<<<< HEAD
-        throw new Error(result.error || '생성 요청에 실패했습니다.')
+        throw new Error(result.message || '생성 요청에 실패했습니다.')
       }
 
-      // ✅ planId를 받아서 result 페이지로 이동
+      // Navigate to result page with planId
       const planId = result.planId
-      router.push(`/generate/result?plan=${planId}&template=${templateKey}`)
+      router.push(`/generate/result?planId=${encodeURIComponent(planId)}&template=${encodeURIComponent(templateKey)}`)
       
     } catch (error) {
       console.error('Submit failed:', error)
