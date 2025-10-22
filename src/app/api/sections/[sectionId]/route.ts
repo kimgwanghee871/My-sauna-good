@@ -5,7 +5,7 @@ import { supabaseServer } from '@/lib/supabase-server'
 
 // PUT /api/sections/[sectionId] - 섹션 편집
 export async function PUT(
-  request: Request,
+  _req: Request,
   { params }: { params: { sectionId: string } }
 ) {
   try {
@@ -18,16 +18,12 @@ export async function PUT(
       )
     }
 
-    const { sectionId } = params
-    
+    const sectionId = params.sectionId
     if (!sectionId) {
-      return NextResponse.json(
-        { success: false, message: '섹션 ID가 필요합니다' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'missing sectionId' }, { status: 400 })
     }
-    const { content } = await request.json()
 
+    const { content } = await _req.json()
     if (!content || typeof content !== 'string') {
       return NextResponse.json(
         { success: false, message: '내용이 필요합니다' },

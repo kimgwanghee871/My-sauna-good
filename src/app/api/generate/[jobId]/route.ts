@@ -2,13 +2,15 @@ import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { getGenerationProgress } from '@/lib/generator/orchestrator'
 
+// 반드시 'Request' + 인라인 타입의 ctx만 사용하세요.
+// 별칭 타입/Record/Promise/overload/추가 인자는 모두 금지입니다.
 export async function GET(
-  request: Request,
+  _req: Request,
   { params }: { params: { jobId: string } }
 ) {
   try {
     // 인증 확인
-    const authHeader = request.headers.get('authorization')
+    const authHeader = _req.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { success: false, message: '인증이 필요합니다' },
@@ -26,13 +28,9 @@ export async function GET(
       )
     }
 
-    const { jobId } = params
-
+    const jobId = params.jobId
     if (!jobId) {
-      return NextResponse.json(
-        { success: false, message: '작업 ID가 필요합니다' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'missing jobId' }, { status: 400 })
     }
 
     // 진행상황 조회

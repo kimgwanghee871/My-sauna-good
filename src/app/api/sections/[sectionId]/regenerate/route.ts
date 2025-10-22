@@ -5,7 +5,7 @@ import { supabaseServer } from '@/lib/supabase-server'
 
 // POST /api/sections/[sectionId]/regenerate - 섹션 재생성
 export async function POST(
-  request: Request,
+  _req: Request,
   { params }: { params: { sectionId: string } }
 ) {
   try {
@@ -18,13 +18,9 @@ export async function POST(
       )
     }
 
-    const { sectionId } = params
-    
+    const sectionId = params.sectionId
     if (!sectionId) {
-      return NextResponse.json(
-        { success: false, message: '섹션 ID가 필요합니다' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'missing sectionId' }, { status: 400 })
     }
 
     // 2. 소유권 확인 및 섹션 정보 조회
