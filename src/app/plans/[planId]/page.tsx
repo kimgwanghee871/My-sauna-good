@@ -7,12 +7,12 @@ import { supabaseServer } from '@/lib/supabase-server'
 // SSR 강제 설정 (실시간 데이터 반영)
 export const dynamic = 'force-dynamic'
 
-interface PlanPageProps {
-  params: { planId: string }
-}
-
-export default async function PlanPage({ params }: PlanPageProps) {
-  const { planId } = params
+export default async function PlanPage({
+  params,
+}: {
+  params: Promise<{ planId: string }>
+}) {
+  const { planId } = await params
   
   // 1. 세션 확인
   const session = await getServerSession(authOptions)
