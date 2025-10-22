@@ -1,69 +1,104 @@
 // src/app/plans/[planId]/page.tsx
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/options'
 import { admin } from '@/lib/supabase-server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 export default async function PlanPage({ params }: { params: Promise<{ planId: string }> }) {
   const { planId } = await params
   
-  // 🔍 SERVER LOGGING: Route entry
+  // 인증 확인
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email) {
+    redirect('/login?callbackUrl=' + encodeURIComponent(`/plans/${planId}`))
+  }
+  
   console.log('🔍 [PlanPage] Route accessed:', {
     planId,
-    timestamp: new Date().toISOString(),
-    userAgent: 'server-side'
+    user: session.user.email,
+    timestamp: new Date().toISOString()
   })
   
   try {
-    // 🔍 SERVER LOGGING: Admin client check
-    console.log('🔍 [PlanPage] Creating admin client...')
     const supabase = admin()
-    console.log('✅ [PlanPage] Admin client created successfully')
     
-    // 🔍 SERVER LOGGING: Database query attempt
-    console.log('🔍 [PlanPage] Querying business_plans table...', { planId })
+    // 사업계획서 조회
     const { data: plan, error } = await supabase
       .from('business_plans')
       .select('*')
       .eq('id', planId)
       .single()
     
-    if (error) {
-      console.error('❌ [PlanPage] Database query error:', {
-        error: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        planId
-      })
+    if (error || !plan) {
+      console.warn('⚠️ [PlanPage] Plan not found:', { planId, error: error?.message })
       return notFound()
     }
     
-    if (!plan) {
-      console.warn('⚠️ [PlanPage] Plan not found in database:', { planId })
+    // 소유권 확인
+    if (plan.user_id !== session.user.email) {
+      console.warn('⚠️ [PlanPage] Access denied:', { planId, owner: plan.user_id, user: session.user.email })
       return notFound()
     }
     
     console.log('✅ [PlanPage] Plan found successfully:', {
       planId,
       title: plan.title,
-      status: plan.status,
-      created_at: plan.created_at
+      status: plan.status
     })
     
-    // 🔍 SUCCESS: Return test UI
+    // 실제 사업계획서 뷰어 UI
     return (
-      <pre style={{ padding: 16, background: '#f0f0f0', margin: 16 }}>
-        ✅ PLAN ROUTE SUCCESS
-        {"\n"}planId = {planId}
-        {"\n"}title = {plan.title}
-        {"\n"}status = {plan.status}
-        {"\n"}created_at = {plan.created_at}
-      </pre>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto py-8 px-4">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="border-b pb-4 mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">{plan.title}</h1>
+              <p className="text-gray-600 mt-1">사업계획서 ID: {planId}</p>
+              <div className="flex items-center mt-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  plan.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {plan.status === 'completed' ? '완료됨' : '진행중'}
+                </span>
+                <span className="ml-3 text-sm text-gray-500">
+                  생성일: {new Date(plan.created_at).toLocaleDateString('ko-KR')}
+                </span>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-medium mb-2">템플릿 유형</h3>
+                <p className="text-gray-700">{plan.template_key}</p>
+              </div>
+              
+              {plan.quality_score && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-medium mb-2">품질 점수</h3>
+                  <p className="text-blue-700">{plan.quality_score}점</p>
+                </div>
+              )}
+              
+              <div className="flex space-x-3 pt-4">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  편집하기
+                </button>
+                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                  PDF 다운로드
+                </button>
+                <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                  공유하기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     )
     
   } catch (error) {
     console.error('💥 [PlanPage] Unexpected error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
       planId
     })
     return notFound()
