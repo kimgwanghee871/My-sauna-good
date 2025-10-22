@@ -9,6 +9,20 @@ interface ResultViewerProps {
   templateKey: string
 }
 
+// 레거시 차트 데이터를 표준 ChartSpec으로 정규화
+type AnyChart = any
+
+function normalizeChart(c: AnyChart): ChartSpec {
+  return {
+    id: c.id ?? `chart-${Math.random().toString(36).substr(2, 9)}`,
+    type: c.type ?? c.chartType ?? 'bar',
+    title: c.title ?? c.chartTitle ?? c.id ?? '제목 없음',
+    data: Array.isArray(c.data) ? c.data : [],
+    config: c.config ?? {},
+    meta: c.meta ?? {},
+  }
+}
+
 export default function ResultViewer({ planId, templateKey }: ResultViewerProps) {
   const { progress, isConnected, error, refresh } = useGenerationProgress(planId)
   const [charts, setCharts] = useState<ChartSpec[]>([])
@@ -25,8 +39,10 @@ export default function ResultViewer({ planId, templateKey }: ResultViewerProps)
 
   const loadCharts = async () => {
     try {
-      const chartData = await getChartsByPlanId(planId)
-      setCharts(chartData)
+      const rawChartData = await getChartsByPlanId(planId)
+      // 표준 스키마로 정규화 (레거시 호환)
+      const normalizedCharts = (rawChartData as AnyChart[]).map(normalizeChart)
+      setCharts(normalizedCharts)
     } catch (error) {
       console.error('차트 로드 실패:', error)
     }
@@ -198,15 +214,13 @@ export default function ResultViewer({ planId, templateKey }: ResultViewerProps)
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {charts.map((chart, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  {/* 표준 키(title/type) 우선, 레거시(chartTitle/chartType) 호환 */}
+                  {/* 정규화된 표준 스키마 사용 */}
                   <h4 className="text-sm font-medium text-gray-900 mb-2">
-                    {/* @ts-expect-error: legacy compat */}
-                    {chart.title ?? (chart as any).chartTitle ?? chart.id}
+                    {chart.title}
                   </h4>
                   <div className="h-32 bg-gray-100 rounded flex items-center justify-center">
                     <span className="text-xs text-gray-500">
-                      {/* @ts-expect-error: legacy compat */}
-                      {(chart.type ?? (chart as any).chartType) + ' 차트'}
+                      {chart.type} 차트
                     </span>
                   </div>
                 </div>
