@@ -9,7 +9,32 @@ An intelligent planning assistant built with Next.js 15, React, and TypeScript.
 - Optimized with Next.js 15 and Turbopack
 
 ## Deployment
-This project is configured for automatic deployment on Vercel.
+
+### Auto Deployment Commands
+```bash
+# Deploy current branch (main or genspark_ai_developer)
+npm run deploy
+
+# Deploy to production (merges genspark_ai_developer to main)  
+npm run deploy:production
+
+# Deploy preview (genspark_ai_developer branch)
+npm run deploy:preview
+
+# Manual script execution
+./scripts/auto-deploy.sh
+```
+
+### Deployment Branches
+- **Production**: `main` branch → https://my-sauna-good.vercel.app
+- **Preview**: `genspark_ai_developer` branch → Preview URL
+
+### Auto Deploy Features
+- ✅ Automatic deployment on push to main/genspark_ai_developer
+- ✅ Preview deployments for pull requests  
+- ✅ Build validation with conflict marker detection
+- ✅ GitHub Actions integration
+- ✅ Environment variables management
 
 ## Development
 ```bash

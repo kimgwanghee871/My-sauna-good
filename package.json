@@ -8,7 +8,10 @@
     "build": "rm -rf .next && next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "deploy": "./scripts/auto-deploy.sh",
+    "deploy:production": "git checkout main && git merge genspark_ai_developer && ./scripts/auto-deploy.sh",
+    "deploy:preview": "git checkout genspark_ai_developer && ./scripts/auto-deploy.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

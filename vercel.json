@@ -1,3 +1,16 @@
 {
-  "ignoreCommand": "git grep -n '<<<<<<<\\|=======\\|>>>>>>>' src/ && echo 'Conflict markers found' && exit 1 || exit 0"
+  "ignoreCommand": "git grep -n '<<<<<<<\\|=======\\|>>>>>>>' src/ && echo 'Conflict markers found' && exit 1 || exit 0",
+  "buildCommand": "npm run build",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "genspark_ai_developer": true
+    }
+  },
+  "github": {
+    "autoAlias": false,
+    "autoJobCancelation": true
+  }
 }
