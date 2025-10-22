@@ -4,7 +4,7 @@ import { getGenerationProgress } from '@/lib/generator/orchestrator'
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ jobId: string }> }
+  { params }: { params: { jobId: string } }
 ) {
   try {
     // 인증 확인
@@ -26,8 +26,7 @@ export async function GET(
       )
     }
 
-    // jobId 추출 (Next.js 15에서 params는 Promise)
-    const { jobId } = await params
+    const { jobId } = params
 
     if (!jobId) {
       return NextResponse.json(
