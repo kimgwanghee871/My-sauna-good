@@ -4,7 +4,10 @@ import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
 // POST /api/sections/[sectionId]/regenerate - 섹션 재생성
-export async function POST(_req: Request, ctx: any) {
+export async function POST(
+  _req: Request, 
+  { params }: { params: Promise<{ sectionId: string }> }
+) {
   try {
     // 1. 세션 확인
     const session = await getServerSession(authOptions)
@@ -15,8 +18,7 @@ export async function POST(_req: Request, ctx: any) {
       )
     }
 
-    const p = ctx?.params?.sectionId
-    const sectionId = Array.isArray(p) ? p[0] : p
+    const { sectionId } = await params
     if (!sectionId) {
       return NextResponse.json({ error: 'missing sectionId' }, { status: 400 })
     }
