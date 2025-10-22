@@ -317,24 +317,24 @@ export function getProgressSummary(progress: GenerationProgress | null): Progres
 }
 
 /**
- * 생성 취소
+ * 생성 취소 - 완전 재작성
  */
 export async function cancelGeneration(planId: string): Promise<boolean> {
   try {
     const supabase = supabaseBrowser()
     
-    // ✅ 타입 우회: any 사용으로 Supabase 타입 충돌 완전 제거
-    const { error } = await (supabase as any)
+    // 🔥 완전히 새로운 방식: 타입 없이 직접 실행
+    const result = await supabase
       .from('business_plans')
       .update({
         status: 'cancelled',
         current_step: '생성이 취소되었습니다.',
         completed_at: new Date().toISOString()
-      })
+      } as any)
       .eq('id', planId)
 
-    if (error) {
-      console.error('생성 취소 오류:', error)
+    if (result.error) {
+      console.error('생성 취소 오류:', result.error)
       return false
     }
 
@@ -352,23 +352,23 @@ export async function regenerateSection(planId: string, sectionId: string): Prom
   try {
     const supabase = supabaseBrowser()
     
-    // ✅ 타입 우회: 섹션 업데이트
-    const { error } = await (supabase as any)
+    // 🔥 완전히 새로운 방식: 섹션 업데이트  
+    const sectionResult = await supabase
       .from('business_plan_sections')
       .update({
         status: 'regenerating',
         error: null
-      })
+      } as any)
       .eq('id', sectionId)
       .eq('plan_id', planId)
 
-    if (error) {
-      console.error('섹션 재생성 요청 오류:', error)
+    if (sectionResult.error) {
+      console.error('섹션 재생성 요청 오류:', sectionResult.error)
       return false
     }
     
-    // ✅ 타입 우회: 로그 추가
-    await (supabase as any)
+    // 🔥 완전히 새로운 방식: 로그 추가
+    await supabase
       .from('generation_logs')
       .insert({
         plan_id: planId,
@@ -377,7 +377,7 @@ export async function regenerateSection(planId: string, sectionId: string): Prom
         status: 'running',
         model: 'manual',
         created_at: new Date().toISOString()
-      })
+      } as any)
 
     return true
   } catch (err) {
