@@ -91,7 +91,7 @@ export function getUserFromSession(session: any): User | null {
   if (!session?.user) return null
   
   return {
-    id: session.user.id,
+    id: session.user.email, // Use email as user identifier
     email: session.user.email,
     name: session.user.name,
     role: session.user.role || 'user',
