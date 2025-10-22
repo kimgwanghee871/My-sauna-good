@@ -7,40 +7,75 @@ import { supabaseServer } from '@/lib/supabase-server'
 // SSR 강제 설정 (실시간 데이터 반영)
 export const dynamic = 'force-dynamic'
 
+// 클라이언트 컴포넌트로 분리된 백버튼
+function BackButton() {
+  'use client'
+  return (
+    <button 
+      onClick={() => window.history.back()}
+      className="text-gray-400 hover:text-gray-600"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+    </button>
+  )
+}
+
 export default async function PlanPage({
   params,
 }: {
   params: Promise<{ planId: string }>
 }) {
+  console.log('[DEBUG] PlanPage 시작')
+  
   const { planId } = await params
+  console.log('[DEBUG] planId:', planId)
   
   // 1. 세션 확인
   const session = await getServerSession(authOptions)
-  if (!session?.user?.email) {
-    redirect('/login?reason=auth&redirect=/plans/' + encodeURIComponent(planId))
+  const email = session?.user?.email
+  console.log('[DEBUG] session email:', email)
+  
+  if (!email) {
+    console.log('[DEBUG] 세션 없음, 로그인으로 리다이렉트')
+    redirect('/login?reason=auth&redirect=' + encodeURIComponent(`/plans/${planId}`))
   }
 
-  // 2. 서버에서 소유권 1차 확인 (없으면 404로 숨김)
+  // 2. 서버에서 소유권 1차 확인 (RLS 무시하고 서비스 키 사용)
   const supabase = supabaseServer()
+  console.log('[DEBUG] Supabase 조회 시작')
+  
   const { data: plan, error } = await supabase
     .from('business_plans')
     .select('id,user_id,status,template_key,quality_score,title,created_at,updated_at')
     .eq('id', planId)
     .maybeSingle()
 
+  console.log('[DEBUG] plan 조회 결과:', { plan, error })
+
   if (error) {
-    console.error('Plan fetch error:', error)
+    console.error('[DEBUG] Plan fetch error:', error)
     notFound()
   }
 
-  if (!plan || plan.user_id !== session.user.email) {
+  if (!plan) {
+    console.log('[DEBUG] Plan 없음, 404')
+    notFound()
+  }
+
+  if (plan.user_id !== email) {
+    console.log('[DEBUG] 소유권 없음, 404. plan.user_id:', plan.user_id, 'email:', email)
     notFound()
   }
 
   // 3. 계획서가 아직 생성 중이면 result 페이지로 리다이렉트
   if (plan.status === 'generating' || plan.status === 'pending') {
-    redirect(`/generate/result?planId=${planId}&template=${plan.template_key}`)
+    console.log('[DEBUG] 아직 생성중, result로 리다이렉트')
+    redirect(`/generate/result?planId=${encodeURIComponent(planId)}&template=${plan.template_key}`)
   }
+
+  console.log('[DEBUG] 모든 체크 통과, 페이지 렌더링')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -71,14 +106,7 @@ export default async function PlanPage({
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <button 
-                  onClick={() => window.history.back()}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                </button>
+                <BackButton />
               </div>
             </div>
           </div>
