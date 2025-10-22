@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/test/create-sample-plan - 테스트용 샘플 계획서 생성
->>>>>>> 62f3e08 (fix: Add runtime env debugging and Node.js runtime enforcement)
 export async function POST(request: NextRequest) {
   return await createSamplePlan(request)
 }
