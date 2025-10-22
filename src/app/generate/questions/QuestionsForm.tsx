@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import QnaField from '../_components/QnaField'
 import AutosaveBadge from '../_components/AutosaveBadge'
 import ProgressBar from '../_components/ProgressBar'

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
+import { authOptions } from '../../auth/[...nextauth]/route'
 import { QnaInput } from '@/lib/schemas/qset.schema'
 import { TemplateKey } from '@/lib/schemas/template.schema'
 
@@ -8,7 +8,8 @@ export async function POST(request: NextRequest) {
   try {
     // 1. 세션 확인
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const userEmail = session?.user?.email
+    if (!userEmail) {
       return NextResponse.json(
         { success: false, message: '인증이 필요합니다' },
         { status: 401 }
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     const planId = `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
     // 5. localStorage에 데이터 저장 준비 (클라이언트에서 수행)
-    console.log('Plan generation started:', { planId, templateKey, userId: session.user.id })
+    console.log('Plan generation started:', { planId, templateKey, userEmail })
 
     return NextResponse.json({
       success: true,
