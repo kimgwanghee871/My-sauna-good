@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { admin } from '@/lib/supabase-server'
 
+export const runtime = 'nodejs'
+
 export async function GET() {
   try {
     const planId = `sample_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`

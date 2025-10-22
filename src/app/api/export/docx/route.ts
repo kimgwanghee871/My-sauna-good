@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
+export const runtime = 'nodejs'
+
 // GET /api/export/docx?planId=xxx - DOCX 다운로드
 export async function GET(request: NextRequest) {
   try {
