@@ -148,15 +148,35 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
         extraNotes: formData.extraNotes || ''
       }
 
-      // Store final form data
+      // Store final form data for backup
       localStorage.setItem(`${storageKey}_final`, JSON.stringify(finalData))
       
-      // Navigate to result page (when implemented)
-      router.push(`/generate/result?template=${templateKey}`)
+      // Call API to start generation
+      const response = await fetch('/api/generate/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templateKey,
+          formData: finalData
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || '서버 오류가 발생했습니다')
+      }
+
+      // Navigate to result page with planId
+      const { planId } = result
+      router.push(`/generate/result?planId=${planId}&template=${templateKey}`)
       
     } catch (error) {
       console.error('Submit failed:', error)
-      alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
+      const errorMessage = error instanceof Error ? error.message : '제출 중 오류가 발생했습니다. 다시 시도해주세요.'
+      alert(errorMessage)
     } finally {
       setIsSubmitting(false)
     }

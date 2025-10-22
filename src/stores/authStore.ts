@@ -38,7 +38,7 @@ export const useAuthStore = create<AuthStore>()(
       setSession: (session) => set({ 
         session, 
         user: session?.user ? {
-          id: session.user.id,
+          id: session.user.email, // Use email as user identifier
           email: session.user.email,
           name: session.user.name,
           role: session.user.role as 'user' | 'admin',

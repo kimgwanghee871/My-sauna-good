@@ -1,7 +1,7 @@
 // 실시간 진행률 및 결과 페이지
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
-import GenerationResultClient from './GenerationResultClient'
+import SimpleResultClient from './SimpleResultClient'
 
 // SSR 강제 설정
 export const dynamic = 'force-dynamic'
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 interface SearchParams {
   template?: string
   plan?: string
+  planId?: string
 }
 
 export default async function GenerationResultPage({
@@ -24,10 +25,11 @@ export default async function GenerationResultPage({
 
   // 2. 검색 파라미터 해제
   const sp = await searchParams
-  const { template, plan } = sp
+  const { template, plan, planId } = sp
 
-  // 3. 파라미터 검증
-  if (!template || !plan) {
+  // 3. 파라미터 검증 (plan 또는 planId 중 하나는 있어야 함)
+  const actualPlanId = planId || plan
+  if (!template || !actualPlanId) {
     redirect('/generate/template')
   }
 
@@ -58,7 +60,7 @@ export default async function GenerationResultPage({
 
       {/* 메인 컨텐츠 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <GenerationResultClient planId={plan} templateKey={template as any} />
+        <SimpleResultClient planId={actualPlanId} templateKey={template as any} />
       </div>
     </div>
   )
