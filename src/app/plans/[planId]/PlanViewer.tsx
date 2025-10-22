@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { supabaseServer } from '@/lib/supabase-server'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/supabase'
 
 // Types
 interface SectionRow {
@@ -23,12 +24,7 @@ interface ChartSpec {
   meta?: any
 }
 
-interface MarketSpecRow {
-  plan_id: string
-  json_spec: {
-    charts?: ChartSpec[]
-  } | null
-}
+
 
 interface PlanData {
   id: string
@@ -54,15 +50,14 @@ export default function PlanViewer({ planId, templateKey, initialPlan }: PlanVie
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Create Supabase client for browser
-  const supabase = useMemo(() => {
-    // Use browser client for realtime features
-    const { createClient } = require('@supabase/supabase-js')
-    return createClient(
+  // ✅ 정타입 Supabase 클라이언트 (SupabaseClient<Database>)
+  const sb = useMemo<SupabaseClient<Database>>(
+    () => createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  }, [])
+    ),
+    []
+  )
 
   // Load initial data
   useEffect(() => {
@@ -71,7 +66,7 @@ export default function PlanViewer({ planId, templateKey, initialPlan }: PlanVie
         setIsLoading(true)
         
         // Load sections
-        const { data: sectionsData, error: sectionsError } = await supabase
+        const { data: sectionsData, error: sectionsError } = await sb
           .from('business_plan_sections')
           .select('id,plan_id,section_index,heading,content,status,updated_at')
           .eq('plan_id', planId)
@@ -85,15 +80,15 @@ export default function PlanViewer({ planId, templateKey, initialPlan }: PlanVie
 
         setSections(sectionsData || [])
 
-        // Load charts if available - ✅ 제네릭 타입 + 널가드 적용
-        const { data: chartSpec, error: chartError } = await supabase
-          .from<MarketSpecRow>('market_specs')
+        // Load charts if available - ✅ 정타입 클라이언트, 제네릭 제거
+        const { data: ms, error: chartError } = await sb
+          .from('market_specs')
           .select('json_spec')
           .eq('plan_id', planId)
           .maybeSingle()
 
         if (!chartError) {
-          const rawCharts = chartSpec?.json_spec?.charts ?? []
+          const rawCharts = (ms?.json_spec as any)?.charts ?? []
           setCharts(Array.isArray(rawCharts) ? rawCharts.map(normalizeChart) : [])
         }
 
@@ -107,11 +102,11 @@ export default function PlanViewer({ planId, templateKey, initialPlan }: PlanVie
     }
 
     loadData()
-  }, [planId, supabase])
+  }, [planId, sb])
 
   // Real-time subscription for sections
   useEffect(() => {
-    const channel = supabase
+    const channel = sb
       .channel(`plan_sections_${planId}`)
       .on(
         'postgres_changes',
@@ -144,9 +139,9 @@ export default function PlanViewer({ planId, templateKey, initialPlan }: PlanVie
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      sb.removeChannel(channel)
     }
-  }, [planId, supabase])
+  }, [planId, sb])
 
   // Scroll to active section
   const scrollToSection = useCallback((sectionIndex: number) => {
