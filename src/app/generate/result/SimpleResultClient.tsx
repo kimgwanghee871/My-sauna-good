@@ -151,10 +151,10 @@ export default function SimpleResultClient({
           </div>
           <div className="mt-4 flex space-x-3">
             <button 
-              onClick={() => alert(`사업계획서 보기 기능은 아직 구현 중입니다. Plan ID: ${planId}`)}
+              onClick={() => router.push(`/plans/${planId}`)}
               className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
             >
-              사업계획서 보기
+              📋 사업계획서 보기
             </button>
             <button 
               onClick={() => router.push('/generate/template')}
