@@ -1,16 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
-interface RegenerateParams {
-  sectionId: string
-}
-
 // POST /api/sections/[sectionId]/regenerate - 섹션 재생성
 export async function POST(
-  request: NextRequest,
-  { params }: { params: RegenerateParams }
+  request: Request,
+  { params }: { params: { sectionId: string } }
 ) {
   try {
     // 1. 세션 확인
@@ -23,6 +19,13 @@ export async function POST(
     }
 
     const { sectionId } = params
+    
+    if (!sectionId) {
+      return NextResponse.json(
+        { success: false, message: '섹션 ID가 필요합니다' },
+        { status: 400 }
+      )
+    }
 
     // 2. 소유권 확인 및 섹션 정보 조회
     const supabase = supabaseServer()

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { getGenerationProgress } from '@/lib/generator/orchestrator'
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { jobId: string } }
 ) {
   try {
