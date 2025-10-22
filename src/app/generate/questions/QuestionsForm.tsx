@@ -148,10 +148,14 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
         extraNotes: formData.extraNotes || ''
       }
 
-      // Store final form data
+      // Store final form data for backup
       localStorage.setItem(`${storageKey}_final`, JSON.stringify(finalData))
       
+<<<<<<< HEAD
       // 🚀 실제 AI 생성 API 호출
+=======
+      // Call API to start generation
+>>>>>>> a3316fe1cfda8166faa5a4f61727027a4ab915fc
       const response = await fetch('/api/generate/start', {
         method: 'POST',
         headers: {
@@ -159,15 +163,21 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
         },
         body: JSON.stringify({
           templateKey,
+<<<<<<< HEAD
           answers: finalData,
           attachments: finalData.attachments,
           extraNotes: finalData.extraNotes
         }),
+=======
+          formData: finalData
+        })
+>>>>>>> a3316fe1cfda8166faa5a4f61727027a4ab915fc
       })
 
       const result = await response.json()
 
       if (!response.ok || !result.success) {
+<<<<<<< HEAD
         throw new Error(result.error || '생성 요청에 실패했습니다.')
       }
 
@@ -177,8 +187,8 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
       
     } catch (error) {
       console.error('Submit failed:', error)
-      const errorMessage = error instanceof Error ? error.message : '제출 중 오류가 발생했습니다.'
-      alert(`오류: ${errorMessage}\n\n다시 시도해주세요.`)
+      const errorMessage = error instanceof Error ? error.message : '제출 중 오류가 발생했습니다. 다시 시도해주세요.'
+      alert(errorMessage)
     } finally {
       setIsSubmitting(false)
     }

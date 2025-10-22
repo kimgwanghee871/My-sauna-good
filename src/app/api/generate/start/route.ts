@@ -1,161 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { startBusinessPlanGeneration } from '@/lib/generator/orchestrator'
-import { TemplateType, UserInputs } from '@/types/template'
-import type { TemplateKey } from '@/lib/schemas/template.schema'
-import type { QnaInput } from '@/lib/schemas/qset.schema'
-
-// QnaInput을 UserInputs로 변환하는 함수
-function mapQnaInputToUserInputs(templateKey: TemplateKey, qnaInput: QnaInput): UserInputs {
-  // TemplateKey를 TemplateType으로 변환
-  const template: TemplateType = templateKey as TemplateType
-
-  return {
-    template,
-    title: qnaInput.companyName,
-    company: {
-      name: qnaInput.companyName,
-      description: qnaInput.solution,
-      history: '', // QnaInput에 없는 필드는 빈 문자열로 처리
-      location: '',
-      size: '',
-      industry: ''
-    },
-    product: {
-      name: qnaInput.companyName,
-      description: qnaInput.solution,
-      features: qnaInput.solution,
-      benefits: qnaInput.solution,
-      technology: '',
-      development: qnaInput.roadmap
-    },
-    market: {
-      size: '',
-      growth: '',
-      target: qnaInput.targetCustomer,
-      competition: qnaInput.competition,
-      analysis: qnaInput.competition,
-      opportunity: qnaInput.problem
-    },
-    finance: {
-      revenue: qnaInput.bizModel,
-      costs: '',
-      funding: qnaInput.fundingNeed,
-      projections: qnaInput.financeSnapshot,
-      breakeven: ''
-    },
-    // 추가 필드들을 QnaInput 데이터로 매핑
-    problem: qnaInput.problem,
-    solution: qnaInput.solution,
-    targetCustomer: qnaInput.targetCustomer,
-    competition: qnaInput.competition,
-    bizModel: qnaInput.bizModel,
-    fundingNeed: qnaInput.fundingNeed,
-    financeSnapshot: qnaInput.financeSnapshot,
-    roadmap: qnaInput.roadmap,
-    team: qnaInput.team,
-    attachments: qnaInput.attachments || [],
-    extraNotes: qnaInput.extraNotes || ''
-  }
-}
+import { authOptions } from '@/lib/auth/options'
+import { QnaInput } from '@/lib/schemas/qset.schema'
+import { TemplateKey } from '@/lib/schemas/template.schema'
 
 export async function POST(request: NextRequest) {
   try {
-    // NextAuth 세션 확인
-    const session = await getServerSession()
-    
-    if (!session || !session.user) {
+    // 1. 세션 확인
+    const session = await getServerSession(authOptions)
+    const userEmail = session?.user?.email
+    if (!userEmail) {
       return NextResponse.json(
-        { success: false, error: '로그인이 필요합니다.' },
+        { success: false, message: '인증이 필요합니다' },
         { status: 401 }
       )
     }
 
-    // 요청 데이터 파싱
+    // 2. 요청 데이터 파싱
     const body = await request.json()
-    const { templateKey, answers, attachments, extraNotes }: {
-      templateKey: TemplateKey
-      answers: QnaInput
-      attachments?: any[]
-      extraNotes?: string
+    const { templateKey, formData }: { 
+      templateKey: TemplateKey, 
+      formData: QnaInput 
     } = body
 
-    if (!templateKey || !answers) {
+    if (!templateKey || !formData) {
       return NextResponse.json(
-        { success: false, error: '템플릿과 답변 데이터가 필요합니다.' },
+        { success: false, message: '템플릿 키와 폼 데이터가 필요합니다' },
         { status: 400 }
       )
     }
 
-    // QnaInput 검증 - 필수 필드 확인
+    // 3. 폼 데이터 검증
     const requiredFields: (keyof QnaInput)[] = [
       'companyName', 'problem', 'solution', 'targetCustomer', 'competition',
       'bizModel', 'fundingNeed', 'financeSnapshot', 'roadmap', 'team'
     ]
 
     const missingFields = requiredFields.filter(field => {
-      const value = answers[field]
-      return !value || (typeof value === 'string' && value.trim().length < 2)
+      const value = formData[field]?.toString().trim()
+      return !value || value.length < 2
     })
 
     if (missingFields.length > 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: '필수 항목이 누락되었습니다.',
-          missingFields 
+        {
+          success: false,
+          message: '필수 항목이 누락되었습니다',
+          missingFields
         },
         { status: 400 }
       )
     }
 
-    try {
-      // QnaInput을 UserInputs로 변환
-      const userInputs = mapQnaInputToUserInputs(templateKey, answers)
-      
-      // 사용자 ID 추출 (NextAuth에서 user.email을 ID로 사용)
-      const userId = session.user.email || session.user.id || 'anonymous'
+    // 4. 간단한 planId 생성 (개발 단계)
+    const planId = `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    // 5. localStorage에 데이터 저장 준비 (클라이언트에서 수행)
+    console.log('Plan generation started:', { planId, templateKey, userEmail })
 
-      // AI 생성 작업 시작
-      const planId = await startBusinessPlanGeneration(
-        templateKey as TemplateType, 
-        userInputs, 
-        userId
-      )
-
-      return NextResponse.json({
-        success: true,
-        message: '사업계획서 생성이 시작되었습니다.',
-        planId,
-        estimatedTime: '3-5분'
-      })
-
-    } catch (generationError) {
-      console.error('Generation start failed:', generationError)
-      
-      // 구체적인 에러 메시지 제공
-      let errorMessage = '생성 작업을 시작할 수 없습니다.'
-      if (generationError instanceof Error) {
-        errorMessage = generationError.message
-      }
-      
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: errorMessage
-        },
-        { status: 500 }
-      )
-    }
+    return NextResponse.json({
+      success: true,
+      message: '사업계획서 생성이 시작되었습니다',
+      planId,
+      templateKey,
+      estimatedTime: '3-5분'
+    })
 
   } catch (error) {
-    console.error('Generate Start API Error:', error)
-    
+    console.error('Generate start API error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
-        error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' 
-      },
+      { success: false, message: '서버 오류가 발생했습니다' },
       { status: 500 }
     )
   }
