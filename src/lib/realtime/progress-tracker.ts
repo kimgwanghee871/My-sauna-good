@@ -326,7 +326,7 @@ export async function cancelGeneration(planId: string): Promise<boolean> {
     const { error } = await supabase
       .from('business_plans')
       .update({ 
-        status: 'cancelled',
+        status: 'cancelled' as const,
         current_step: '생성이 취소되었습니다.',
         completed_at: new Date().toISOString()
       })
@@ -355,7 +355,7 @@ export async function regenerateSection(planId: string, sectionId: string): Prom
     const { error } = await supabase
       .from('business_plan_sections')
       .update({ 
-        status: 'regenerating',
+        status: 'regenerating' as const,
         error: null
       })
       .eq('id', sectionId)
@@ -373,7 +373,7 @@ export async function regenerateSection(planId: string, sectionId: string): Prom
         plan_id: planId,
         step_order: 999, // 재생성은 별도 순서
         step_name: `섹션 재생성 요청`,
-        status: 'running',
+        status: 'running' as const,
         model: 'manual',
         created_at: new Date().toISOString()
       })
