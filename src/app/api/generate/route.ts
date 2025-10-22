@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { deductCredits } from '@/lib/db/users'
 import { startBusinessPlanGeneration } from '@/lib/generator/orchestrator'
 import { validateTemplateInputs } from '@/lib/templates'
 import { TemplateType, UserInputs } from '@/types/template'
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     // 인증 확인
     const authHeader = request.headers.get('authorization')

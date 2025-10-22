@@ -1,14 +1,10 @@
-// src/app/api/sections/[sectionId]/route.ts
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
 // PUT /api/sections/[sectionId] - 섹션 편집
-export async function PUT(
-  _req: Request,
-  { params }: { params: { sectionId: string } }
-) {
+export async function PUT(_req: Request, ctx: any) {
   try {
     // 1. 세션 확인
     const session = await getServerSession(authOptions)
@@ -19,7 +15,8 @@ export async function PUT(
       )
     }
 
-    const sectionId = params?.sectionId
+    const p = ctx?.params?.sectionId
+    const sectionId = Array.isArray(p) ? p[0] : p
     if (!sectionId) {
       return NextResponse.json({ error: 'missing sectionId' }, { status: 400 })
     }
