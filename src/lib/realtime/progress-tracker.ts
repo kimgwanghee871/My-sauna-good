@@ -323,9 +323,9 @@ export async function cancelGeneration(planId: string): Promise<boolean> {
   try {
     const supabase = supabaseBrowser()
     
-    // 🔥 완전히 새로운 방식: 타입 없이 직접 실행
-    const result = await supabase
-      .from('business_plans')
+    // 🔧 HOTFIX: 타입 우회 (Supabase 타입 추론 문제 회피)
+    const result = await (supabase as any)
+      .from('business_plans' as any)
       .update({
         status: 'cancelled',
         current_step: '생성이 취소되었습니다.',
@@ -352,9 +352,9 @@ export async function regenerateSection(planId: string, sectionId: string): Prom
   try {
     const supabase = supabaseBrowser()
     
-    // 🔥 완전히 새로운 방식: 섹션 업데이트  
-    const sectionResult = await supabase
-      .from('business_plan_sections')
+    // 🔧 HOTFIX: 타입 우회 (섹션 업데이트)
+    const sectionResult = await (supabase as any)
+      .from('business_plan_sections' as any)
       .update({
         status: 'regenerating',
         error: null
@@ -367,9 +367,9 @@ export async function regenerateSection(planId: string, sectionId: string): Prom
       return false
     }
     
-    // 🔥 완전히 새로운 방식: 로그 추가
-    await supabase
-      .from('generation_logs')
+    // 🔧 HOTFIX: 타입 우회 (로그 추가)
+    await (supabase as any)
+      .from('generation_logs' as any)
       .insert({
         plan_id: planId,
         step_order: 999, // 재생성은 별도 순서
