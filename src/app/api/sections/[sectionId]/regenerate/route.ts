@@ -1,3 +1,4 @@
+// src/app/api/sections/[sectionId]/regenerate/route.ts
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
@@ -18,7 +19,7 @@ export async function POST(
       )
     }
 
-    const sectionId = params.sectionId
+    const sectionId = params?.sectionId
     if (!sectionId) {
       return NextResponse.json({ error: 'missing sectionId' }, { status: 400 })
     }
