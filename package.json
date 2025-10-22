@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
+    "prebuild": "node -e \"process.exit(require('child_process').spawnSync('bash',['-c','! git grep -n \\\"<<<<<<<\\\\|=======\\\\|>>>>>>>\\\" src/']).status)\"",
     "build": "rm -rf .next && next build",
     "start": "next start",
     "lint": "next lint",
