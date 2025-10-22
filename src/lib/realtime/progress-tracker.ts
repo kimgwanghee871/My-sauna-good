@@ -30,6 +30,19 @@ type SectionRow = {
   error?: string | null
 }
 
+// === Supabase 'generation_logs' row 타입 ===
+type LogRow = {
+  id: string
+  plan_id: string
+  step_order?: number | null
+  step_name?: string | null
+  status?: 'running' | 'completed' | 'failed' | null
+  model?: string | null
+  duration?: number | null
+  created_at: string
+  error?: string | null
+}
+
 // Types for progress tracking
 export interface SectionProgress {
   sectionId: string
@@ -142,10 +155,10 @@ export function useGenerationProgress(planId: string) {
         console.warn('섹션 조회 오류:', sectionsError.message)
       }
 
-      // 생성 로그 조회
+      // ✅ 생성 로그 조회 (제네릭 타입 + 명시적 컬럼)
       const { data: logsData, error: logsError } = await supabase
         .from('generation_logs')
-        .select('*')
+        .select('id,plan_id,step_order,step_name,status,model,duration,created_at,error')
         .eq('plan_id', planId)
         .order('created_at', { ascending: false })
         .limit(20)
@@ -173,16 +186,16 @@ export function useGenerationProgress(planId: string) {
           completedAt: section.updated_at,
           error: section.error ?? undefined
         })),
-        logs: (logsData || []).map(log => ({
+        logs: (logsData || []).map((log: LogRow) => ({
           id: log.id,
           planId: log.plan_id,
-          stepOrder: log.step_order,
-          stepName: log.step_name,
-          status: log.status,
-          model: log.model,
-          duration: log.duration,
+          stepOrder: log.step_order ?? 0,
+          stepName: log.step_name ?? '',
+          status: log.status ?? 'running',
+          model: log.model ?? '',
+          duration: log.duration ?? undefined,
           createdAt: log.created_at,
-          error: log.error
+          error: log.error ?? undefined
         })),
         qualityScore: planData.quality_score ?? undefined,
         startedAt: planData.created_at,
