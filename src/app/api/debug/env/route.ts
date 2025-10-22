@@ -12,9 +12,11 @@ export async function GET() {
     vercel_env: process.env.VERCEL_ENV,
     node_env: process.env.NODE_ENV,
     runtime: 'nodejs',
+    timestamp: new Date().toISOString(),
     url_len: url.length,
     anon_len: anon.length,
     service_len: service.length,
-    timestamp: new Date().toISOString()
+    // 디버깅용: 처음/끝 3글자만 표시
+    service_preview: service.length > 6 ? `${service.slice(0,3)}...${service.slice(-3)}` : 'empty'
   })
 }
