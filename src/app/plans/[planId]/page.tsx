@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import PlanViewer from './PlanViewer'
@@ -7,18 +7,18 @@ import { supabaseServer } from '@/lib/supabase-server'
 // SSR 강제 설정 (실시간 데이터 반영)
 export const dynamic = 'force-dynamic'
 
-interface PlanPageProps {
+export default async function PlanPage({
+  params,
+}: {
   params: Promise<{ planId: string }>
-}
-
-export default async function PlanPage({ params }: PlanPageProps) {
+}) {
+  const { planId } = await params
+  
   // 1. 세션 확인
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
-    redirect('/login?reason=auth&redirect=/plans/' + encodeURIComponent((await params).planId))
+    redirect('/login?reason=auth&redirect=/plans/' + encodeURIComponent(planId))
   }
-
-  const { planId } = await params
 
   // 2. 서버에서 소유권 1차 확인 (없으면 404로 숨김)
   const supabase = supabaseServer()
@@ -30,11 +30,11 @@ export default async function PlanPage({ params }: PlanPageProps) {
 
   if (error) {
     console.error('Plan fetch error:', error)
-    redirect('/404')
+    notFound()
   }
 
   if (!plan || plan.user_id !== session.user.email) {
-    redirect('/404')
+    notFound()
   }
 
   // 3. 계획서가 아직 생성 중이면 result 페이지로 리다이렉트

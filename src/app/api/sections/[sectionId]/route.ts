@@ -1,16 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
-interface SectionParams {
-  sectionId: string
-}
-
 // PUT /api/sections/[sectionId] - 섹션 편집
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<SectionParams> }
+  _req: Request, 
+  { params }: { params: Promise<{ sectionId: string }> }
 ) {
   try {
     // 1. 세션 확인
@@ -23,8 +19,11 @@ export async function PUT(
     }
 
     const { sectionId } = await params
-    const { content } = await request.json()
+    if (!sectionId) {
+      return NextResponse.json({ error: 'missing sectionId' }, { status: 400 })
+    }
 
+    const { content } = await _req.json()
     if (!content || typeof content !== 'string') {
       return NextResponse.json(
         { success: false, message: '내용이 필요합니다' },
