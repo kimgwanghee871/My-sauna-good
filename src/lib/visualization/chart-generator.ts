@@ -31,7 +31,7 @@ export type ChartSpec = {
 
 export type VisualizationConfig = {
   sectionId: string
-  charts: ChartData[]
+  charts: ChartSpec[]
   theme?: 'light' | 'dark'
   responsive?: boolean
 }
@@ -182,7 +182,7 @@ export class ChartGenerator {
   /**
    * 차트 데이터를 이미지로 렌더링
    */
-  async renderChart(chart: ChartData): Promise<string> {
+  async renderChart(chart: ChartSpec): Promise<string> {
     // 2단계에서 실제 렌더링 구현
     // 지금은 플레이스홀더 반환
     return `data:image/svg+xml;base64,${btoa('<svg></svg>')}`
