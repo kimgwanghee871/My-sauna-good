@@ -3,6 +3,33 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 
+// === Supabase 'business_plans' row 타입 ===
+type PlanRow = {
+  id: string
+  status: 'initializing' | 'analyzing' | 'generating' | 'completing' | 'completed' | 'failed' | 'cancelled'
+  current_step?: string | null
+  total_steps?: number | null
+  completed_steps?: number | null
+  total_api_calls?: number | null
+  quality_score?: number | null
+  created_at: string
+  completed_at?: string | null
+  error?: string | null
+}
+
+// === Supabase 'business_plan_sections' row 타입 ===
+type SectionRow = {
+  id: string
+  title: string
+  section_order: number
+  status: 'pending' | 'generating' | 'completed' | 'failed' | 'regenerating'
+  word_count?: number | null
+  has_visualization: boolean
+  created_at: string
+  updated_at: string
+  error?: string | null
+}
+
 // Types for progress tracking
 export interface SectionProgress {
   sectionId: string
@@ -68,7 +95,7 @@ export function useGenerationProgress(planId: string) {
     try {
       setError(null)
       
-      // 메인 진행률 조회
+      // ✅ 제네릭 타입 + maybeSingle() 사용
       const { data: planData, error: planError } = await supabase
         .from('business_plans')
         .select(`
@@ -84,7 +111,7 @@ export function useGenerationProgress(planId: string) {
           error
         `)
         .eq('id', planId)
-        .single()
+        .maybeSingle<PlanRow>()
 
       if (planError) {
         throw new Error(`진행률 조회 실패: ${planError.message}`)
@@ -127,24 +154,24 @@ export function useGenerationProgress(planId: string) {
         console.warn('로그 조회 오류:', logsError.message)
       }
 
-      // 진행률 데이터 구성
+      // ✅ 타입 안전한 진행률 데이터 구성
       const progressData: GenerationProgress = {
         planId: planData.id,
         status: planData.status,
-        currentStep: planData.current_step || '초기화 중...',
-        totalSteps: planData.total_steps || 40,
-        completedSteps: planData.completed_steps || 0,
-        totalApiCalls: planData.total_api_calls || 0,
-        sections: (sectionsData || []).map(section => ({
+        currentStep: planData.current_step ?? '초기화 중...',
+        totalSteps: planData.total_steps ?? 40,
+        completedSteps: planData.completed_steps ?? 0,
+        totalApiCalls: planData.total_api_calls ?? 0,
+        sections: (sectionsData || []).map((section: SectionRow) => ({
           sectionId: section.id,
           sectionTitle: section.title,
           sectionOrder: section.section_order,
           status: section.status,
-          wordCount: section.word_count,
+          wordCount: section.word_count ?? undefined,
           hasVisualization: section.has_visualization || false,
           startedAt: section.created_at,
           completedAt: section.updated_at,
-          error: section.error
+          error: section.error ?? undefined
         })),
         logs: (logsData || []).map(log => ({
           id: log.id,
@@ -157,10 +184,10 @@ export function useGenerationProgress(planId: string) {
           createdAt: log.created_at,
           error: log.error
         })),
-        qualityScore: planData.quality_score,
+        qualityScore: planData.quality_score ?? undefined,
         startedAt: planData.created_at,
-        completedAt: planData.completed_at,
-        error: planData.error
+        completedAt: planData.completed_at ?? undefined,
+        error: planData.error ?? undefined
       }
 
       setProgress(progressData)
