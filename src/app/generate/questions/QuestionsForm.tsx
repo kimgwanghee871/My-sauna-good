@@ -151,12 +151,34 @@ export default function QuestionsForm({ templateKey }: { templateKey: TemplateKe
       // Store final form data
       localStorage.setItem(`${storageKey}_final`, JSON.stringify(finalData))
       
-      // Navigate to result page (when implemented)
-      router.push(`/generate/result?template=${templateKey}`)
+      // 🚀 실제 AI 생성 API 호출
+      const response = await fetch('/api/generate/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templateKey,
+          answers: finalData,
+          attachments: finalData.attachments,
+          extraNotes: finalData.extraNotes
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || '생성 요청에 실패했습니다.')
+      }
+
+      // ✅ planId를 받아서 result 페이지로 이동
+      const planId = result.planId
+      router.push(`/generate/result?plan=${planId}&template=${templateKey}`)
       
     } catch (error) {
       console.error('Submit failed:', error)
-      alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
+      const errorMessage = error instanceof Error ? error.message : '제출 중 오류가 발생했습니다.'
+      alert(`오류: ${errorMessage}\n\n다시 시도해주세요.`)
     } finally {
       setIsSubmitting(false)
     }
