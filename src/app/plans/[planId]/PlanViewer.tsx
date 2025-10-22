@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { supabaseBrowser } from '@/lib/supabase-browser'
+import { supabaseServer } from '@/lib/supabase-server'
 
 // Types
 interface SectionRow {
@@ -21,6 +21,13 @@ interface ChartSpec {
   data: any[]
   config?: Record<string, any>
   meta?: any
+}
+
+interface MarketSpecRow {
+  plan_id: string
+  json_spec: {
+    charts?: ChartSpec[]
+  } | null
 }
 
 interface PlanData {
@@ -48,7 +55,14 @@ export default function PlanViewer({ planId, templateKey, initialPlan }: PlanVie
   const [error, setError] = useState<string | null>(null)
 
   // Create Supabase client for browser
-  const supabase = useMemo(() => supabaseBrowser(), [])
+  const supabase = useMemo(() => {
+    // Use browser client for realtime features
+    const { createClient } = require('@supabase/supabase-js')
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }, [])
 
   // Load initial data
   useEffect(() => {
@@ -71,16 +85,16 @@ export default function PlanViewer({ planId, templateKey, initialPlan }: PlanVie
 
         setSections(sectionsData || [])
 
-        // Load charts if available
+        // Load charts if available - ✅ 제네릭 타입 + 널가드 적용
         const { data: chartSpec, error: chartError } = await supabase
-          .from('market_specs')
+          .from<MarketSpecRow>('market_specs')
           .select('json_spec')
           .eq('plan_id', planId)
           .maybeSingle()
 
-        if (!chartError && chartSpec?.json_spec?.charts) {
-          const rawCharts = chartSpec.json_spec.charts as any[]
-          setCharts(rawCharts.map(normalizeChart))
+        if (!chartError) {
+          const rawCharts = chartSpec?.json_spec?.charts ?? []
+          setCharts(Array.isArray(rawCharts) ? rawCharts.map(normalizeChart) : [])
         }
 
         setError(null)

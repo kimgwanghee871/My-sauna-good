@@ -3,13 +3,17 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
-// 섹션 수정
+interface SectionParams {
+  sectionId: string
+}
+
+// PUT /api/sections/[sectionId] - 섹션 편집
 export async function PUT(
   request: NextRequest,
-  context: { params: Promise<{ sectionId: string }> }
+  { params }: { params: Promise<SectionParams> }
 ) {
   try {
-    // 1. 인증 확인
+    // 1. 세션 확인
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -18,48 +22,47 @@ export async function PUT(
       )
     }
 
-    const { sectionId } = await context.params
-    const body = await request.json()
-    const { content } = body
+    const { sectionId } = await params
+    const { content } = await request.json()
 
-    if (typeof content !== 'string') {
+    if (!content || typeof content !== 'string') {
       return NextResponse.json(
-        { success: false, message: '유효하지 않은 내용입니다' },
+        { success: false, message: '내용이 필요합니다' },
         { status: 400 }
       )
     }
 
+    // 2. 소유권 확인 및 업데이트
     const supabase = supabaseServer()
-
-    // 2. 섹션 소유권 확인
-    const { data: section, error: sectionError } = await supabase
+    
+    // 먼저 섹션 소유권 확인
+    const { data: section, error: fetchError } = await supabase
       .from('business_plan_sections')
-      .select('id,plan_id,business_plans!inner(user_id)')
+      .select('id, plan_id, business_plans!inner(user_id)')
       .eq('id', sectionId)
-      .maybeSingle()
+      .single()
 
-    if (sectionError || !section) {
+    if (fetchError || !section) {
       return NextResponse.json(
         { success: false, message: '섹션을 찾을 수 없습니다' },
         { status: 404 }
       )
     }
 
-    // TypeScript 타입 안전성을 위한 타입 단언
-    const businessPlan = section.business_plans as any
-    if (businessPlan.user_id !== session.user.email) {
+    // 소유권 검증
+    const planOwner = (section as any).business_plans?.user_id
+    if (planOwner !== session.user.email) {
       return NextResponse.json(
         { success: false, message: '권한이 없습니다' },
         { status: 403 }
       )
     }
 
-    // 3. 섹션 내용 업데이트
+    // 3. 섹션 업데이트
     const { error: updateError } = await supabase
       .from('business_plan_sections')
-      .update({ 
+      .update({
         content,
-        status: 'completed',
         updated_at: new Date().toISOString()
       })
       .eq('id', sectionId)
@@ -67,7 +70,7 @@ export async function PUT(
     if (updateError) {
       console.error('Section update error:', updateError)
       return NextResponse.json(
-        { success: false, message: '섹션 업데이트에 실패했습니다' },
+        { success: false, message: '업데이트 중 오류가 발생했습니다' },
         { status: 500 }
       )
     }

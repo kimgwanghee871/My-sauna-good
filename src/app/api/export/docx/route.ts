@@ -3,10 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
-// DOCX 내보내기
+// GET /api/export/docx?planId=xxx - DOCX 다운로드
 export async function GET(request: NextRequest) {
   try {
-    // 1. 인증 확인
+    // 1. 세션 확인
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 2. planId 파라미터 추출
+    // 2. planId 파라미터 확인
     const { searchParams } = new URL(request.url)
     const planId = searchParams.get('planId')
 
@@ -26,14 +26,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // 3. 소유권 확인 및 계획서 데이터 조회
     const supabase = supabaseServer()
-
-    // 3. 계획서 및 소유권 확인
+    
     const { data: plan, error: planError } = await supabase
       .from('business_plans')
-      .select('id,user_id,title,template_key,created_at')
+      .select('id, user_id, title, template_key, created_at')
       .eq('id', planId)
-      .maybeSingle()
+      .single()
 
     if (planError || !plan) {
       return NextResponse.json(
@@ -52,31 +52,40 @@ export async function GET(request: NextRequest) {
     // 4. 섹션 데이터 조회
     const { data: sections, error: sectionsError } = await supabase
       .from('business_plan_sections')
-      .select('section_index,heading,content,status')
+      .select('section_index, heading, content, status')
       .eq('plan_id', planId)
+      .eq('status', 'completed')
       .order('section_index')
 
     if (sectionsError) {
       console.error('Sections fetch error:', sectionsError)
       return NextResponse.json(
-        { success: false, message: '섹션 데이터를 조회할 수 없습니다' },
+        { success: false, message: '섹션 데이터를 불러올 수 없습니다' },
         { status: 500 }
       )
     }
 
-    // 5. 간단한 텍스트 기반 DOCX 생성 (실제로는 docx 라이브러리 사용)
+    // 5. DOCX 생성 (현재는 시뮬레이션 - 실제로는 docx 라이브러리 사용)
     const docxContent = generateDocxContent(plan, sections || [])
-
-    // 6. 응답 헤더 설정
-    const headers = new Headers()
-    headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(plan.title || '사업계획서')}.docx"`)
-
-    // 실제로는 여기서 docx 바이너리를 생성해야 하지만,
-    // 지금은 텍스트 파일로 대체 (추후 docx 라이브러리 적용)
-    const textBuffer = Buffer.from(docxContent, 'utf-8')
-
-    return new NextResponse(textBuffer, { headers })
+    
+    // TODO: 실제 DOCX 생성 구현
+    // const docx = new Document({
+    //   sections: [{
+    //     properties: {},
+    //     children: docxContent
+    //   }]
+    // })
+    
+    // 현재는 텍스트 파일로 다운로드 (개발용)
+    const textContent = generateTextContent(plan, sections || [])
+    
+    return new NextResponse(textContent, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${plan.title || '사업계획서'}_${new Date().toISOString().split('T')[0]}.txt"`
+      }
+    })
 
   } catch (error) {
     console.error('DOCX export error:', error)
@@ -87,40 +96,38 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// DOCX 컨텐츠 생성 (실제로는 docx 라이브러리 사용)
-function generateDocxContent(plan: any, sections: any[]): string {
-  const title = plan.title || `${plan.template_key} 사업계획서`
-  const createdAt = new Date(plan.created_at).toLocaleDateString('ko-KR')
-
-  let content = `
-${title}
-
-생성일: ${createdAt}
-템플릿: ${plan.template_key}
-
-==================================================
-
-`
-
-  sections.forEach((section, index) => {
-    content += `
-${section.section_index}. ${section.heading}
-
-${section.status === 'completed' && section.content ? 
-  section.content : 
-  '[이 섹션은 아직 생성되지 않았습니다]'
+// DOCX 컨텐츠 생성 (미래 구현용)
+function generateDocxContent(plan: any, sections: any[]) {
+  // TODO: docx 라이브러리를 사용한 실제 DOCX 생성
+  return []
 }
 
---------------------------------------------------
+// 텍스트 컨텐츠 생성 (현재 구현)
+function generateTextContent(plan: any, sections: any[]): string {
+  const lines = [
+    `${plan.title || '사업계획서'}`,
+    '='.repeat(50),
+    '',
+    `템플릿: ${plan.template_key}`,
+    `생성일: ${new Date(plan.created_at).toLocaleDateString('ko-KR')}`,
+    `내보내기일: ${new Date().toLocaleDateString('ko-KR')}`,
+    '',
+    '='.repeat(50),
+    ''
+  ]
 
-`
+  sections.forEach(section => {
+    lines.push(`${section.section_index}. ${section.heading}`)
+    lines.push('-'.repeat(30))
+    lines.push('')
+    lines.push(section.content || '내용이 없습니다.')
+    lines.push('')
+    lines.push('')
   })
 
-  content += `
+  lines.push('='.repeat(50))
+  lines.push('이 문서는 AI 사업계획서 생성기에 의해 작성되었습니다.')
+  lines.push(`생성 시점: ${new Date().toLocaleString('ko-KR')}`)
 
-이 문서는 AI 사업계획서 생성 시스템에 의해 자동으로 생성되었습니다.
-생성일시: ${new Date().toLocaleString('ko-KR')}
-`
-
-  return content
+  return lines.join('\n')
 }
