@@ -4,7 +4,7 @@ import { getGenerationProgress } from '@/lib/generator/orchestrator'
 
 export async function GET(
   request: Request,
-  { params }: { params: { jobId: string } }
+  ctx: { params: Record<string, string | string[]> }
 ) {
   try {
     // 인증 확인
@@ -26,7 +26,9 @@ export async function GET(
       )
     }
 
-    const { jobId } = params
+    // jobId 추출 (동적 세그먼트는 string 또는 string[] 가능성)
+    const p = ctx.params?.jobId
+    const jobId = Array.isArray(p) ? p[0] : p
 
     if (!jobId) {
       return NextResponse.json(

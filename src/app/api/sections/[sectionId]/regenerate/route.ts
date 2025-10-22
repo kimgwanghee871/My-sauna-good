@@ -6,7 +6,7 @@ import { supabaseServer } from '@/lib/supabase-server'
 // POST /api/sections/[sectionId]/regenerate - 섹션 재생성
 export async function POST(
   request: Request,
-  { params }: { params: { sectionId: string } }
+  ctx: { params: Record<string, string | string[]> }
 ) {
   try {
     // 1. 세션 확인
@@ -18,7 +18,9 @@ export async function POST(
       )
     }
 
-    const { sectionId } = params
+    // sectionId 추출 (동적 세그먼트는 string 또는 string[] 가능성)
+    const p = ctx.params?.sectionId
+    const sectionId = Array.isArray(p) ? p[0] : p
     
     if (!sectionId) {
       return NextResponse.json(
