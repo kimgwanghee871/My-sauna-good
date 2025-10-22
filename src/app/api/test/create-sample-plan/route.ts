@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
+import { authOptions } from '@/lib/auth/options'
 import { supabaseServer } from '@/lib/supabase-server'
 
-// POST /api/test/create-sample-plan - 테스트용 샘플 계획서 생성
+// GET/POST /api/test/create-sample-plan - 테스트용 샘플 계획서 생성
+export async function GET(request: NextRequest) {
+  return await createSamplePlan(request)
+}
+
 export async function POST(request: NextRequest) {
+  return await createSamplePlan(request)
+}
+
+async function createSamplePlan(request: NextRequest) {
   try {
     // 1. 세션 확인
     const session = await getServerSession(authOptions)
@@ -15,8 +23,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 2. 요청 데이터
-    const { templateKey = 'investment', planTitle = '샘플 사업계획서' } = await request.json().catch(() => ({}))
+    // 2. 요청 데이터 (GET/POST 모두 지원)
+    let templateKey = 'investment'
+    let planTitle = '샘플 사업계획서'
+    
+    if (request.method === 'POST') {
+      const body = await request.json().catch(() => ({}))
+      templateKey = body.templateKey || templateKey
+      planTitle = body.planTitle || planTitle
+    }
     
     const planId = `sample_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
