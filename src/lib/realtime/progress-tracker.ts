@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 
-// === Supabase 'business_plans' row 타입 ===
+// === Supabase 'plans' row 타입 ===
 type PlanRow = {
   id: string
   status: 'initializing' | 'analyzing' | 'generating' | 'completing' | 'completed' | 'failed' | 'cancelled'
@@ -110,7 +110,7 @@ export function useGenerationProgress(planId: string) {
       
       // ✅ 제네릭 타입 + maybeSingle() 사용
       const { data: planData, error: planError } = await supabase
-        .from('business_plans')
+        .from('plans')
         .select(`
           id,
           status,
@@ -227,7 +227,7 @@ export function useGenerationProgress(planId: string) {
         {
           event: '*',
           schema: 'public',
-          table: 'business_plans',
+          table: 'plans',
           filter: `id=eq.${planId}`
         },
         () => {
@@ -325,7 +325,7 @@ export async function cancelGeneration(planId: string): Promise<boolean> {
     
     // 🔧 HOTFIX: 타입 우회 (Supabase 타입 추론 문제 회피)
     const result = await (supabase as any)
-      .from('business_plans' as any)
+      .from('plans' as any)
       .update({
         status: 'cancelled',
         current_step: '생성이 취소되었습니다.',

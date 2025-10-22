@@ -13,7 +13,7 @@ export async function GET() {
     
     // 계획서 메타데이터 생성
     const { error: planError } = await supabase
-      .from('business_plans')
+      .from('plans')
       .insert({
         id: planId,
         user_id: testEmail,

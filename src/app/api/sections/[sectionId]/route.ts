@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
+// ⚡ CRITICAL: Force Node.js runtime for Supabase operations
+export const runtime = 'nodejs'
+
 // PUT /api/sections/[sectionId] - 섹션 편집
 export async function PUT(
   _req: Request, 
@@ -37,7 +40,7 @@ export async function PUT(
     // 먼저 섹션 소유권 확인
     const { data: section, error: fetchError } = await supabase
       .from('business_plan_sections')
-      .select('id, plan_id, business_plans!inner(user_id)')
+      .select('id, plan_id, plans!inner(user_id)')
       .eq('id', sectionId)
       .single()
 
@@ -49,7 +52,7 @@ export async function PUT(
     }
 
     // 소유권 검증
-    const planOwner = (section as any).business_plans?.user_id
+    const planOwner = (section as any).plans?.user_id
     if (planOwner !== session.user.email) {
       return NextResponse.json(
         { success: false, message: '권한이 없습니다' },

@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { supabaseServer } from '@/lib/supabase-server'
 
+// ⚡ CRITICAL: Force Node.js runtime for Supabase operations  
+export const runtime = 'nodejs'
+
 // POST /api/sections/[sectionId]/regenerate - 섹션 재생성
 export async function POST(
   _req: Request, 
@@ -33,7 +36,7 @@ export async function POST(
         plan_id, 
         section_index, 
         heading,
-        business_plans!inner(user_id, template_key, form_data)
+        plans!inner(user_id, template_key, form_data)
       `)
       .eq('id', sectionId)
       .single()
@@ -46,7 +49,7 @@ export async function POST(
     }
 
     // 소유권 검증
-    const planOwner = (section as any).business_plans?.user_id
+    const planOwner = (section as any).plans?.user_id
     if (planOwner !== session.user.email) {
       return NextResponse.json(
         { success: false, message: '권한이 없습니다' },

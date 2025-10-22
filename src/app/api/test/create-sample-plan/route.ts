@@ -3,11 +3,15 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/options'
 import { supabaseServer } from '@/lib/supabase-server'
 
+// ⚡ CRITICAL: Force Node.js runtime for Supabase operations
+export const runtime = 'nodejs'
+
 // GET/POST /api/test/create-sample-plan - 테스트용 샘플 계획서 생성
 export async function GET(request: NextRequest) {
   return await createSamplePlan(request)
 }
 
+// POST /api/test/create-sample-plan - 테스트용 샘플 계획서 생성
 export async function POST(request: NextRequest) {
   return await createSamplePlan(request)
 }
@@ -40,7 +44,7 @@ async function createSamplePlan(request: NextRequest) {
 
     // 계획서 메타데이터 생성
     const { error: planError } = await supabase
-      .from('business_plans')
+      .from('plans')
       .insert({
         id: planId,
         user_id: session.user.email,
