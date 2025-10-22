@@ -10,7 +10,7 @@ interface RegenerateParams {
 // POST /api/sections/[sectionId]/regenerate - 섹션 재생성
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<RegenerateParams> }
+  { params }: { params: RegenerateParams }
 ) {
   try {
     // 1. 세션 확인
@@ -22,7 +22,7 @@ export async function POST(
       )
     }
 
-    const { sectionId } = await params
+    const { sectionId } = params
 
     // 2. 소유권 확인 및 섹션 정보 조회
     const supabase = supabaseServer()

@@ -10,7 +10,7 @@ interface SectionParams {
 // PUT /api/sections/[sectionId] - 섹션 편집
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<SectionParams> }
+  { params }: { params: SectionParams }
 ) {
   try {
     // 1. 세션 확인
@@ -22,7 +22,7 @@ export async function PUT(
       )
     }
 
-    const { sectionId } = await params
+    const { sectionId } = params
     const { content } = await request.json()
 
     if (!content || typeof content !== 'string') {
