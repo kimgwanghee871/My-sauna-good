@@ -2,6 +2,8 @@
 import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 import { createDocumentContext, formatDocumentContextForPrompt } from '../pdf/extractor'
+import { ChartGenerator, saveChartsToDatabase } from '../visualization/chart-generator'
+import { errorRecovery, createRetryWrapper } from '../error-recovery/retry-system'
 import type { QnaInput, AttachmentFile } from '../schemas/qset.schema'
 
 // 환경변수 확인
@@ -235,7 +237,7 @@ export class AIOrchestrator {
       await this.logStep('outline_generation', i + 1, PIPELINE_STEPS.OUTLINE_GENERATION.model, 'running')
       
       const prompt = this.buildOutlinePrompt(documentContext, sections)
-      const response = await this.callOpenAI(prompt, PIPELINE_STEPS.OUTLINE_GENERATION.model)
+      const response = await this.callOpenAI(prompt, PIPELINE_STEPS.OUTLINE_GENERATION.model, 'outline_generation', i + 1)
       
       await this.logStep('outline_generation', i + 1, PIPELINE_STEPS.OUTLINE_GENERATION.model, 'completed')
     }
@@ -288,7 +290,7 @@ export class AIOrchestrator {
         .eq('section_code', section.code)
       
       const prompt = this.buildSectionPrompt(section, documentContext)
-      const response = await this.callOpenAI(prompt, PIPELINE_STEPS.SECTION_DRAFTS.model)
+      const response = await this.callOpenAI(prompt, PIPELINE_STEPS.SECTION_DRAFTS.model, 'section_draft', section.order)
       
       // 생성된 콘텐츠 저장
       await supabase
@@ -330,7 +332,7 @@ export class AIOrchestrator {
       .join('\n\n---\n\n')
     
     const prompt = this.buildRefinementPrompt(combinedContent)
-    const refinedContent = await this.callOpenAI(prompt, PIPELINE_STEPS.CONTENT_REFINEMENT.model)
+    const refinedContent = await this.callOpenAI(prompt, PIPELINE_STEPS.CONTENT_REFINEMENT.model, 'content_refinement', 1)
     
     // 개선된 콘텐츠를 섹션별로 분할하여 저장 (간소화)
     await supabase
@@ -399,7 +401,7 @@ export class AIOrchestrator {
       await this.logStep('quality_assessment', i + 1, PIPELINE_STEPS.QUALITY_ASSESSMENT.model, 'running')
       
       const prompt = this.buildQualityPrompt()
-      const response = await this.callOpenAI(prompt, PIPELINE_STEPS.QUALITY_ASSESSMENT.model)
+      const response = await this.callOpenAI(prompt, PIPELINE_STEPS.QUALITY_ASSESSMENT.model, 'quality_assessment', i + 1)
       
       // 품질 점수 추출 (간소화)
       qualityScore = Math.min(95, qualityScore + Math.floor(Math.random() * 5))
@@ -452,22 +454,17 @@ export class AIOrchestrator {
   // 유틸리티 메서드들
   // ===================================
 
-  private async callOpenAI(prompt: string, model: string): Promise<string> {
+  private async callOpenAI(prompt: string, model: string, stepName?: string, stepOrder?: number): Promise<string> {
     this.totalApiCalls++
     
-    // 복원력 있는 AI 호출 사용
-    const { resilientAI } = await import('../resilience/error-recovery')
-    
-    const result = await resilientAI.callWithRecovery(
+    // 에러 복구 시스템을 통한 AI 호출
+    return await errorRecovery.callAIWithRetry(
       prompt,
-      model === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o-mini'
+      model,
+      this.planId,
+      stepName || 'unknown_step',
+      stepOrder || 0
     )
-    
-    if (!result.success) {
-      throw new Error(result.error || 'AI 호출 실패')
-    }
-    
-    return result.data || ''
   }
 
   private async logStep(
