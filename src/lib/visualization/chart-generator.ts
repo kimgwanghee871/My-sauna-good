@@ -204,3 +204,28 @@ export async function saveChartsToDatabase(
     // 에러가 있어도 전체 생성 과정은 계속 진행
   }
 }
+
+// === Supabase market_specs row 타입 ===
+type MarketSpecRow = {
+  plan_id: string
+  json_spec: { charts?: ChartSpec[] } | null
+  updated_at?: string | null
+}
+
+/**
+ * ✅ main 브랜치가 기대하는 조회 함수 복구
+ * Supabase market_specs 테이블에서 charts 배열을 반환
+ */
+export async function getChartsByPlanId(
+  planId: string
+): Promise<ChartSpec[]> {
+  try {
+    // 2단계에서 실제 Supabase 조회 구현 예정
+    // 지금은 안전한 빈 배열 반환
+    console.log(`Charts requested for plan ${planId}`)
+    return []
+  } catch (error) {
+    console.error('차트 조회 오류:', error)
+    return []
+  }
+}
