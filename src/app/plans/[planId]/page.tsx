@@ -8,12 +8,12 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const runtime = 'nodejs'
 
-interface PlanPageProps {
-  params: Promise<{ planId: string }>
-}
-
-export default async function PlanPage({ params }: PlanPageProps) {
-  const { planId } = await params
+export default async function PlanPage({ 
+  params 
+}: { 
+  params: { planId: string } 
+}) {
+  const { planId } = params
   
   // 인증 확인
   const session = await getServerSession(authOptions)
